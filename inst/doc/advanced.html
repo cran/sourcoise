@@ -1,0 +1,113 @@
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.14">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Usages avancés</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+width: 0.8em;
+margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+}
+pre.numberSource { margin-left: 3em; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+
+
+<style type="text/css">body {background-color: #fff;margin: 1em auto;max-width: 700px;overflow: visible;padding-left: 2em;padding-right: 2em;font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;font-size: 14px;line-height: 1.35;}table {margin: 1em auto;border-width: 1px;border-color: #DDDDDD;border-style: outset;border-collapse: collapse;}table th {border-width: 2px;padding: 5px;border-style: inset;}table td {border-width: 1px;border-style: inset;line-height: 18px;padding: 5px 5px;}table, table th, table td {border-left-style: none;border-right-style: none;}table thead, table tr.even {background-color: #f7f7f7;}p {margin: 0.5em 0;}blockquote {background-color: #f6f6f6;padding: 0.25em 0.75em;}hr {border-style: solid;border: none;border-top: 1px solid #777;margin: 28px 0;}dl {margin-left: 0;}dl dd {margin-bottom: 13px;margin-left: 13px;}dl dt {font-weight: bold;}ul {margin-top: 0;}ul li {list-style: circle outside;}ul ul {margin-bottom: 0;}pre, code {background-color: #f7f7f7;border-radius: 3px;color: #333;white-space: pre-wrap; }pre {border-radius: 3px;margin: 5px 0px 10px 0px;padding: 10px;}pre:not([class]) {background-color: #f7f7f7;}code {font-family: Consolas, Monaco, 'Courier New', monospace;font-size: 85%;}p > code, li > code {padding: 2px 0px;}div.figure {text-align: center;}img {background-color: #FFFFFF;padding: 2px;border: 1px solid #DDDDDD;border-radius: 3px;border: 1px solid #CCCCCC;margin: 0 5px;}h1 {margin-top: 0;font-size: 35px;line-height: 40px;}h2 {border-bottom: 4px solid #f7f7f7;padding-top: 10px;padding-bottom: 2px;font-size: 145%;}h3 {border-bottom: 2px solid #f7f7f7;padding-top: 10px;font-size: 120%;}h4 {border-bottom: 1px solid #f7f7f7;margin-left: 8px;font-size: 105%;}h5, h6 {border-bottom: 1px solid #ccc;font-size: 105%;}a {color: #0033dd;text-decoration: none;}a:hover {color: #6666ff; }a:visited {color: #800080; }a:visited:hover {color: #BB00BB; }a[href^="http:"] {text-decoration: underline; }a[href^="https:"] {text-decoration: underline; }</style>
+</head>
+
+<body>
+
+
+<header id="title-block-header">
+<h1 class="title">Usages avancés</h1>
+
+</header>
+
+
+<h2 id="où-sont-les-données-cachées">Où sont les données cachées ?</h2>
+<p><code>sourcoise()</code> a deux modes d’éxécution.</p>
+<ol type="1">
+<li><p>Soit au niveau projet et alors les données cachées le sont dans un dossier commun au projet, à la racine du projet. Le dossier dans ce cas s’appelle <code>.sourcoise</code>. La structure du dossier reproduit celle des scripts, avec des dossiers et sous dossiers. Au bout des chemins, il y a pour chaque script deux types de fichiers : un <code>json</code> qui contient toutes les métadonnées, est qui est spécifique à chqeu utilisateur. Ce fichier est créé et écrit à chaque fois que le script est exécuté. Il est indéxé par le rang de l’exécution. Le seond type de fichier contient les données et est au format <code>qs2</code> du package <code>{qs2}</code>. Ce format peut être directement lu depuis <code>r</code> si on le souhaite. Le nom du fichier de données est composé du nom du script et d’un hash sur les données en cache (le hash est calculé sur l’objet <code>r</code> en mémoire et donc ne dépend pas de la plateforme ni du format sur le disque). Le fichier de données n’est écrit que si les données changent. On peut donc avoir plusieurs <code>json</code> qui font référence aux mêmes données.</p></li>
+<li><p>Dans le deuxième mode, les données sont stockées au même endroit que le script, toujours dans un dossier caché <code>.sourcoise</code>. On y retrouve les <code>json</code> et <code>qs2</code> suivant les mêmes règles que dans le cas précédent. Si il y a plusieurs scripts dans le même dossier, ils partagent le même <code>.sourcoise</code>.</p></li>
+</ol>
+<p>Les deux méthodes peuvent cohabiter, ce qui peut conduire à des doublons, qui ne seront pas automatiquement joints. Il est possible d’effacer tous les <code>.sourcoise</code> par la commande <code>sourcoise_reset()</code> et de fixer l’option 1 ou 2 par <code>options(sourcoise.src_in = &quot;projet&quot;)</code> (option 1.) ou <code>options(sourcoise.src_in = &quot;file&quot;)</code> (option 2.).</p>
+<h2 id="passer-des-paramètres-au-script">Passer des paramètres au script</h2>
+<p>Il est possible de passer des paramètres avec <code>sourcoise()</code>, bien que ce soit plus pratique d’écrire une fonction. Les paramètres sont passés sous forme d’une liste (<code>list(param1=&quot;1&quot;)</code> par exemple) et sont disponibles dans le script (dans la variable <code>args</code>, donc pour avoir le paramètre <code>param1</code> il faut écrire <code>args$param1</code> dans le script. Changer les paramètres invalide le cache.</p>
+<p>Notez que le script est toujours exécuté en “local” ce qui veut dire que toute variable créée ou tout package ouvert à l’intérieur du script n’est pas renvoyé (comme dans une fonction, en fait).</p>
+<h2 id="récupérer-les-métadonnées">Récupérer les métadonnées</h2>
+<p>En utlisant l’option <code>metadata=TRUE</code> dans <code>sourcoise()</code> on peut récupérer des informations sur, par exmple, la date de téléchargement. C’est illustré sur quelques graphiques du cachier de graphique.</p>
+<p>En code cela donne le chunk ci dessous. Les données sont accessibles par <code>$data</code> et la date de téléchargement par <code>$date</code>. Cela permet de construire la note (noter que <code>glue::glue()</code> est appliqué aux textes passés à <code>ofce_caption()</code>).</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>transactions <span class="ot">&lt;-</span> <span class="fu">sourcoise</span>(<span class="st">&quot;immo/data_transaction.r&quot;</span>, <span class="at">metadata=</span><span class="cn">TRUE</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>trsc <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(transactions<span class="sc">$</span>data) <span class="sc">+</span> </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>date, <span class="at">y=</span>t<span class="sc">*</span><span class="dv">1000</span>) <span class="sc">+</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">col =</span> bluish) <span class="sc">+</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point_interactive</span>(<span class="fu">aes</span>(<span class="at">tooltip =</span> tooltip, <span class="at">data_id =</span> date),</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>                         <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">stroke =</span> <span class="fl">0.2</span>, <span class="at">col =</span> <span class="st">&quot;white&quot;</span>, </span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>                         <span class="at">fill =</span> bluish,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">hover_nearest =</span> <span class="cn">TRUE</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>)<span class="sc">+</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ofce</span>() <span class="sc">+</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_log10</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">number_format</span>(<span class="at">scale =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">1000</span>, <span class="at">suffix=</span><span class="st">&quot;k&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  scalex <span class="sc">+</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ofce_caption</span>(</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">source =</span> <span class="st">&quot;IGEDD d&#39;après DGFiP (MEDOC) et bases notariale&quot;</span>, </span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">dpt =</span> transactions<span class="sc">$</span>data<span class="sc">$</span>date,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">note =</span> <span class="st">&quot;Transactions cumulées sur 12 mois, dans l&#39;ancien, maisons et appartements, échelle log, données téléchargées le {date_jour(transactions$date)}&quot;</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">sub=</span> <span class="st">&quot;Nombre de transactions&quot;</span>)</span></code></pre></div>
+<h2 id="quelques-opérations-sur-le-cache">Quelques opérations sur le cache</h2>
+<p>Le package <code>{sourcoise}</code> fournit des outils pour s’occuper des caches. Le premier est <code>sourcoise_status()</code>. il scanne le répertoire et fournit la liste de tous les caches enregistrés et suivis. Il indique si les caches sont valides ou non et les principaux paramètres utilisés pour chaque script.</p>
+<p><code>sourcoise_refresh()</code> rafraîchit (en le forçant) tous les caches. On peut passer à <code>sourcoise_refresh()</code> un <code>tibble</code> comme celui renvoyé par <code>sourcoise_status()</code> mais filtré pour ne rafraîchir que la liste voulue (attention passer toutes les colonnes sans modification). Cela sert lorsqu’on a un processus plus complexe d’invalidation du cache (en fonction d’un calendrier, en interrogeant une API, etc…) et qu’on déclenche en fonction de cette logique l’exécution des caches.</p>
+<p>On peut également à partir de <code>sourcoise_status()</code> accéder aux données en cache. Elles sont enregistrées en <code>.qs2</code> avec les ackage <code>{qs2}</code> et donc se chargent avec un <code>qs2::qs_read()</code>.</p>
+<p>On peut également nettoyer complètement le cache (ce qui provoquera sa ré exécution) avec <code>sourcoise_clear()</code>.</p>
+
+
+
+
+
+</body></html>

@@ -1,0 +1,154 @@
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.14">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>sourcoise : sourcer et mettre en cache</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+width: 0.8em;
+margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+}
+pre.numberSource { margin-left: 3em; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+
+
+<style type="text/css">body {background-color: #fff;margin: 1em auto;max-width: 700px;overflow: visible;padding-left: 2em;padding-right: 2em;font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;font-size: 14px;line-height: 1.35;}table {margin: 1em auto;border-width: 1px;border-color: #DDDDDD;border-style: outset;border-collapse: collapse;}table th {border-width: 2px;padding: 5px;border-style: inset;}table td {border-width: 1px;border-style: inset;line-height: 18px;padding: 5px 5px;}table, table th, table td {border-left-style: none;border-right-style: none;}table thead, table tr.even {background-color: #f7f7f7;}p {margin: 0.5em 0;}blockquote {background-color: #f6f6f6;padding: 0.25em 0.75em;}hr {border-style: solid;border: none;border-top: 1px solid #777;margin: 28px 0;}dl {margin-left: 0;}dl dd {margin-bottom: 13px;margin-left: 13px;}dl dt {font-weight: bold;}ul {margin-top: 0;}ul li {list-style: circle outside;}ul ul {margin-bottom: 0;}pre, code {background-color: #f7f7f7;border-radius: 3px;color: #333;white-space: pre-wrap; }pre {border-radius: 3px;margin: 5px 0px 10px 0px;padding: 10px;}pre:not([class]) {background-color: #f7f7f7;}code {font-family: Consolas, Monaco, 'Courier New', monospace;font-size: 85%;}p > code, li > code {padding: 2px 0px;}div.figure {text-align: center;}img {background-color: #FFFFFF;padding: 2px;border: 1px solid #DDDDDD;border-radius: 3px;border: 1px solid #CCCCCC;margin: 0 5px;}h1 {margin-top: 0;font-size: 35px;line-height: 40px;}h2 {border-bottom: 4px solid #f7f7f7;padding-top: 10px;padding-bottom: 2px;font-size: 145%;}h3 {border-bottom: 2px solid #f7f7f7;padding-top: 10px;font-size: 120%;}h4 {border-bottom: 1px solid #f7f7f7;margin-left: 8px;font-size: 105%;}h5, h6 {border-bottom: 1px solid #ccc;font-size: 105%;}a {color: #0033dd;text-decoration: none;}a:hover {color: #6666ff; }a:visited {color: #800080; }a:visited:hover {color: #BB00BB; }a[href^="http:"] {text-decoration: underline; }a[href^="https:"] {text-decoration: underline; }</style>
+</head>
+
+<body>
+
+
+<header id="title-block-header">
+<h1 class="title">sourcoise : <em>sourcer et mettre en cache</em></h1>
+
+</header>
+
+
+<p><code>sourcoise()</code> fournit une fonction qui se comporte presque comme <code>base::source()</code> en implémentant un mécanisme de cache sur disque. Cela permet de <em>sourcer</em> des scripts <code>r</code> qui récoltent des données, mais qui peuvent échouer (pas de connection internet, API qui ne répond pas, changement dans le format des données renvoyées) ou qui consomme trop de temps à l’exécution (calculs lourds, téléchargements lents), même si le retour est le même. le package inclu des outils pour la gestion du cache et des exécutions.</p>
+<h2 id="comment-lutiliser">Comment l’utiliser ?</h2>
+<ol type="1">
+<li>Mettre le code qui fabrique les données dans un script (<code>&quot;prix_insee.r&quot;</code>) et l’enregistrer dans le dossier où est le qmd. Dans cet exemple, le code <code>r</code> télécharge des données (assez volumineuses) sur Eurostat, les transforme et renvoie un tibble prêt pour le graphique. Le script doit se terminer par un <code>return</code> qui renvoie les données calculées ou téléchargées. Ce sont ces données qui sont mises en cache. Le temps d’exécution est de 11s et le script peut bloquer si l’API d’eurostat n’est pas accessible (ou si on a pas de connection internet).</li>
+</ol>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> prix.qmd</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">└──</span> prix_insee.R</span></code></pre></div>
+<p>Le script <code>prix_insee.r</code> comporte un <code>return()</code> à la fin :</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(insee)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>ipchm <span class="ot">&lt;-</span> <span class="fu">get_idbank_list</span>(<span class="st">&quot;IPCH-2015&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>     <span class="fu">filter</span>(COICOP2016<span class="sc">==</span><span class="st">&quot;00&quot;</span>, FREQ<span class="sc">==</span><span class="st">&quot;M&quot;</span>, NATURE<span class="sc">==</span><span class="st">&quot;INDICE&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>     <span class="fu">pull</span>(idbank) <span class="sc">|&gt;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>     <span class="fu">get_insee_idbank</span>() <span class="sc">|&gt;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>     <span class="fu">select</span>(DATE, <span class="at">ipch =</span> OBS_VALUE, IDBANK)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>ipch <span class="ot">&lt;-</span> ipchm <span class="sc">|&gt;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>     <span class="fu">mutate</span>(<span class="at">DATE =</span> <span class="fu">floor_date</span>(DATE, <span class="at">unit=</span><span class="st">&quot;quarter&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>     <span class="fu">group_by</span>(DATE) <span class="sc">|&gt;</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>     <span class="fu">summarise</span>(<span class="at">ipch =</span> <span class="fu">mean</span>(ipch))</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>ipcha <span class="ot">&lt;-</span> ipch <span class="sc">|&gt;</span> </span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>     <span class="fu">mutate</span>(<span class="at">y =</span> <span class="fu">year</span>(DATE)) <span class="sc">|&gt;</span> </span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>     <span class="fu">group_by</span>(y) <span class="sc">|&gt;</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>     <span class="fu">summarize</span>(<span class="at">ipch =</span> <span class="fu">mean</span>(ipch)) <span class="sc">|&gt;</span> </span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>     <span class="fu">mutate</span>(<span class="at">ipch =</span> ipch <span class="sc">/</span> ipch[y <span class="sc">==</span> <span class="dv">2023</span>])</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># le return final</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="fu">return</span>(<span class="fu">list</span>(<span class="at">ipcha =</span> ipcha, <span class="at">ipchm =</span> ipchm, <span class="at">ipch =</span> ipch))</span></code></pre></div>
+<ol start="2" type="1">
+<li>Dans <code>ipch.qmd</code> on met le chunk suivant (pas besoin de déclarer les librairies utilisées dans le script) :</li>
+</ol>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sourcoise)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>ipch_data <span class="ot">&lt;-</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.R&quot;</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> ipch_data<span class="sc">$</span>ipchm) <span class="sc">+</span> </span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x =</span> DATE, <span class="at">y =</span> ipch ) <span class="sc">+</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()</span></code></pre></div>
+<p>L’utilisation de <code>sourcoise()</code> se fait comme celle de <code>base::source()</code> à l’assignement prêt. Le résultat est mis en cache et les exécution suivant prennent quelques millisecondes. Ces appels fonctionnent sans téléchargement et donc sasn erreur possible si le serveur d’Eurostat est hors ligne ou que l’on a plus d’internet.</p>
+<p><code>sourcoise()</code> dispose d’un cache (caché dans un dossier <code>.sourcoise</code>). Il repère le fichier source (le script) et détecte les changements, ce qui invalide le cache. Si le cache est valide, les données sont renvoyées, sinon, le script est exécuté et les nouvelles données mises en cache.</p>
+<p>Il existe d’autres moyens d’invalider le cache : il peut avoir une durée de vie maximale, avec l’argument <code>lapse=&quot;day&quot;</code>. Cette option dit que si le cache est plus vieux que 24h, il est renouvelé par une ré-exécution du script. Ce paramètre peut prendre plusieurs valeurs et des formes comme <code>2 hours</code> ou <code>3 weeks</code>. D’autres déclencheurs temporels seront possiblement ajoutés pour introduire des calendriers (comme 45 jours après la fin du trimestre). Cependant, <code>sourcoise()</code> n’est pas capable d’aller vérifier (de façon générale) que les données téléchargées ont été mise à jour de plus et donc de ne pas invalider le cache sur cette base.</p>
+<p>Il est aussi possible de déclencher l’invalidation du cache si un autre fichier a été modifié. Il suffit de fournir une liste de fichiers (dont les chemins sont relatifs au script) qui seront tracés. Ces fichiers peuvent être des <code>.csv</code> ou des fichiers <code>.xlsx</code> (ou encore tout autre type de fichier) et donc sont utiles pour déclencher l’exécution du script quand on a fait une modification manuelle ou par un autre programme de ces fichiers. On peut en mettre autant qu’on veut.</p>
+<p>On peut également forcer le déclenchement du script. Cela se fait par une option <code>force_exec=TRUE</code>. Il existe d’autres moyens pour opérer un rafraîchissement du cache plus généraux.</p>
+<p>Il est possible de bloquer l’exécution du code par une option (<code>prevent_exec</code>) qui peut être définie comme une option globale (par <code>options(ofce.sourcpose.prevent_exec=TRUE)</code>). Dans ce cas, aucun script ne sera exécuté, ce qui peut servir lorsqu’on veut faire un rendu du site sans prendre le risque d’une erreur d’API ou d’un blocage.</p>
+<p>L’exécution du code s’effectue en local (donc pas d’effet de bord das l’environnement qui appelle le script) et modifie le <em>working directory</em> pour qu’il soit celui du script appelé. Cela permet alors d’utiliser des chemins relatifs à ce dossier. il est possible de modifier ce comportement par une option.</p>
+<p>Il est possible de logger l’exécution de <code>sourcoise()</code> pour vérifier que tout s’est bien passé et de répérer les accès aux données.</p>
+<p>Une dernière chose : <code>sourcoise()</code> est doté d’une heuristique maline trouve le fichier source même si il est caché (i.e. que le chemin est approximatif, ce qui déclenche une erreur normalement, mais là ça passe), ce qui augmente la portabilité des fichiers sources et facilite l’orgnisation d’un projet. Bien sûr, en cas d’ambiguité, <code>sourcoise()</code> prévient.</p>
+<h2 id="performance">Performance</h2>
+<p>L’exécution “vraie” du scirpt <code>r</code> (sur un Macbook Air M2) prend 34ms et alloue 200kb. Lorsque les données sont en cache, l’exécution est effectuée en moins de 5ms et l’allocation de mémoire est celle des données finales. Le temps d’exécution des données cachées ne dépend que de leur taille alors que le temsp d’exécution “vraie” dépend de la complexité des calculs et des volumes téléchargés par le script. L’acces direct est bien sûr (infiniment) plus rapide, mais sans invalidation de cache !</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bench)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(fs)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sourcoise)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">file_copy</span>(</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">path_package</span>(<span class="st">&quot;sourcoise&quot;</span>, <span class="st">&quot;ipch&quot;</span>, <span class="st">&quot;prix_insee.r&quot;</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;/tmp/prix_insee.r&quot;</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>, <span class="at">root=</span><span class="st">&quot;/tmp&quot;</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">mark</span>(<span class="at">cache =</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>, <span class="at">root=</span><span class="st">&quot;/tmp&quot;</span>),</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">no_cache =</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>, <span class="at">root  =</span> <span class="st">&quot;/tmp&quot;</span>, <span class="at">force_exec =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">direct =</span> data)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 6</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   expression      min   median    `itr/sec` mem_alloc `gc/sec`</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;        &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 cache        5.61ms   5.75ms        171.    171.5KB     9.92</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 no_cache    31.62ms  35.45ms         28.0    25.6MB    11.2 </span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 direct            0      1ns 1370228815.         0B     0</span></span></code></pre></div>
+<p><sup>Created on 2025-03-10 with <a href="https://reprex.tidyverse.org">reprex v2.1.1</a></sup></p>
+<h2 id="le-workflow-avec-sourcoise">Le <em>workflow</em> avec sourcoise</h2>
+<p>Le cas central d’utilisation de sourcoise est dans un projet quarto. On acuiert des données de diférentes sources, plus ou moins complexes, nécessitant plus ou moins de traitements. Ces donénes peuvent être mises à jour, mais la fréquence de mise à jour est bien plus basse que la fréquence de rendu du projet quarto. Dans les chunks on place les mises en forme de graphiques ou de tableaux, afin de pouvoir les corriger et de pouvoir conserver l’adaptation des rendus aux support lors du <code>render</code> du projet quarto. Les données sont fabriquées dans les scripts <code>r</code>, placés là où sont les <code>qmd</code> et appelés périodiquement ou manuellement pour garantir que l’on dispose de la version à jour.</p>
+<p>Ce projet quarto est partagé par github entre plusieurs utilisateurs et les données mises en cache sont commitées (et versionnées) par github. Cela permet de dissocier exécution des scripts (et vérification de leur bonne exécution) du rendu des graphiques ou tableaux faits à partir de ces données.</p>
+<p><code>sourcoise_status()</code> permet de faire un inventaire, pour le projet, de toutes les données en cache. Chaque fichier de donnée en cache, c’est-à-dire qui a été exéctué pleinement avec succès au moins une fois, est repéré (il existe quelque part dans le projet dans un dossier <code>.sourcoise</code>). Avec ce fichier, quelques informations sont conservés sur l’exécution (date, temps, taille des données) mais aussi sur le contexte d’exécution (script <code>r</code>, <code>qmd</code> appelants).</p>
+<p><code>sourcoise_refresh()</code> permet ainsi que rafraicher tout ou partie des données en cache en forçant l’exécution ou en laissant les schémas d’invalidation jouer automatiquement. lorsque les scripts sont exécutés par <code>sourcoise_refresh()</code> le log est activé par défaut. Comme les <code>qmd</code> appelants sont connus, <code>sourcoise_refresh()</code> peut <em>unfreezé</em> ou <em>uncaché</em> les <code>qmd</code>ou les chunks des <code>qmd</code>. C’est important dans le workflow, parce que lorsqu’on rafraichit les données, on veut que les chunks soient réévalués pour que les tableaux ou les graphiques soient refait à partir des nouvelles données. Or, si on utilise <code>freeze</code> quarto n’a pas de moyen de savoir que le <code>freeze</code> est périmé.</p>
+<p>Il est possible de sélectionner les données qui sont rafraichies. <code>sourcoise_refresh()</code> part du résulat de <code>sourcoise_status()</code> par défaut. Il est ainsi possible de faire une sélection des données en cache et de ne passer que celles là à <code>sourcoise_refresh()</code>. Avec un peu de programmation, on peut donc mettre en place un schéma qui régulièrement vérifie la validité des données (calendrier, API ou autre) et déclenche séelctivement la mise à jour. <code>sourcoise()</code> peut appeler d’autres <code>sourcoise()</code> mais pour le moment, il n’y a aucune prise en compte de cette hiérarchie.</p>
+
+
+
+
+
+</body></html>

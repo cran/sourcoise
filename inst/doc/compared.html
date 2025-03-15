@@ -1,0 +1,118 @@
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.14">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Comparé à …</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+width: 0.8em;
+margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+}
+pre.numberSource { margin-left: 3em; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+
+
+<style type="text/css">body {background-color: #fff;margin: 1em auto;max-width: 700px;overflow: visible;padding-left: 2em;padding-right: 2em;font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;font-size: 14px;line-height: 1.35;}table {margin: 1em auto;border-width: 1px;border-color: #DDDDDD;border-style: outset;border-collapse: collapse;}table th {border-width: 2px;padding: 5px;border-style: inset;}table td {border-width: 1px;border-style: inset;line-height: 18px;padding: 5px 5px;}table, table th, table td {border-left-style: none;border-right-style: none;}table thead, table tr.even {background-color: #f7f7f7;}p {margin: 0.5em 0;}blockquote {background-color: #f6f6f6;padding: 0.25em 0.75em;}hr {border-style: solid;border: none;border-top: 1px solid #777;margin: 28px 0;}dl {margin-left: 0;}dl dd {margin-bottom: 13px;margin-left: 13px;}dl dt {font-weight: bold;}ul {margin-top: 0;}ul li {list-style: circle outside;}ul ul {margin-bottom: 0;}pre, code {background-color: #f7f7f7;border-radius: 3px;color: #333;white-space: pre-wrap; }pre {border-radius: 3px;margin: 5px 0px 10px 0px;padding: 10px;}pre:not([class]) {background-color: #f7f7f7;}code {font-family: Consolas, Monaco, 'Courier New', monospace;font-size: 85%;}p > code, li > code {padding: 2px 0px;}div.figure {text-align: center;}img {background-color: #FFFFFF;padding: 2px;border: 1px solid #DDDDDD;border-radius: 3px;border: 1px solid #CCCCCC;margin: 0 5px;}h1 {margin-top: 0;font-size: 35px;line-height: 40px;}h2 {border-bottom: 4px solid #f7f7f7;padding-top: 10px;padding-bottom: 2px;font-size: 145%;}h3 {border-bottom: 2px solid #f7f7f7;padding-top: 10px;font-size: 120%;}h4 {border-bottom: 1px solid #f7f7f7;margin-left: 8px;font-size: 105%;}h5, h6 {border-bottom: 1px solid #ccc;font-size: 105%;}a {color: #0033dd;text-decoration: none;}a:hover {color: #6666ff; }a:visited {color: #800080; }a:visited:hover {color: #BB00BB; }a[href^="http:"] {text-decoration: underline; }a[href^="https:"] {text-decoration: underline; }</style>
+</head>
+
+<body>
+
+
+<header id="title-block-header">
+<h1 class="title">Comparé à …</h1>
+
+</header>
+
+
+<h2 id="par-rapport-à-basesource">par rapport à base::source</h2>
+<p>Une alternative à <code>sourcoise()</code> est d’écrire l’enregistrement des données directement dans le script et de charger les données dans le chunk.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(insee)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>ipchm <span class="ot">&lt;-</span> <span class="fu">get_idbank_list</span>(<span class="st">&quot;IPCH-2015&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>     <span class="fu">filter</span>(COICOP2016<span class="sc">==</span><span class="st">&quot;00&quot;</span>, FREQ<span class="sc">==</span><span class="st">&quot;M&quot;</span>, NATURE<span class="sc">==</span><span class="st">&quot;INDICE&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>     <span class="fu">pull</span>(idbank) <span class="sc">|&gt;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>     <span class="fu">get_insee_idbank</span>() <span class="sc">|&gt;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>     <span class="fu">select</span>(DATE, <span class="at">ipch =</span> OBS_VALUE, IDBANK)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>ipch <span class="ot">&lt;-</span> ipchm <span class="sc">|&gt;</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>     <span class="fu">mutate</span>(<span class="at">DATE =</span> <span class="fu">floor_date</span>(DATE, <span class="at">unit=</span><span class="st">&quot;quarter&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>     <span class="fu">group_by</span>(DATE) <span class="sc">|&gt;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>     <span class="fu">summarise</span>(<span class="at">ipch =</span> <span class="fu">mean</span>(ipch))</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>ipcha <span class="ot">&lt;-</span> ipch <span class="sc">|&gt;</span> </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>     <span class="fu">mutate</span>(<span class="at">y =</span> <span class="fu">year</span>(DATE)) <span class="sc">|&gt;</span> </span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>     <span class="fu">group_by</span>(y) <span class="sc">|&gt;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>     <span class="fu">summarize</span>(<span class="at">ipch =</span> <span class="fu">mean</span>(ipch)) <span class="sc">|&gt;</span> </span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>     <span class="fu">mutate</span>(<span class="at">ipch =</span> ipch <span class="sc">/</span> ipch[y <span class="sc">==</span> <span class="dv">2023</span>])</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(ipcha , ipchm,  ipch, <span class="at">file =</span> <span class="st">&quot;ipch.rds&quot;</span>)</span></code></pre></div>
+<p>et dans le chunk <code>r</code> inclure un <code>loadRDS(&quot;ipch.rds&quot;)</code>. En apparence plus simple cette solution est désastreuse pour le <em>workflow.</em> On ne sait pas quel script il faut lancer, quand il a été lancé, le chargement du script modifie les variables dans l’environnement, les <code>.rds</code> déclenchent des conflits avec <em>github</em>, bref, que des mauvaises pratiques.</p>
+<h2 id="par-rapport-à-memoise">par rapport à memoise</h2>
+<p><code>memoise::memoise()</code> propose une solution proche, avec la possibilité de rendre le cache persistant entre sessions.</p>
+<p>Mais <code>memoise()</code> répond au besoin de l’évaluation d’une fonction, qui pour un même jeu de paramètres renvoie toujours la même chose. Ce qui est la définition d’une fonction dans la paradigme fonctionnel. Le cache permet alors d’échanger espace disque contre performance.</p>
+<p><code>sourcoise()</code> part d’une hypothèse différente, celle d’effets de bord. Le code appelé par le script ressemble à une fonction mais n’en est pas une : les mêmes arguments peuvent renvoyer une valeur différente. C’est le cas notamment lors de l’accès à une API à des données qui renvoie souvent la même chose, mais périodiquement propose une nouvelle version, mise à jour, avec un effet de bord.</p>
+<p>Le temps d’accès à l’API eut être long et éventuellement l’accès hasardeux (serveur hors ligne, internet coupé). Or les appels à l’API peuvent être dans un workflow typique quarto/R très fréquent (à chaque rendu par exemple), <code>sourcoise()</code> permet donc de mettre en cache et de ne déclencher une “vraie” exécution que de temps en temps. Si l’appel à l’API est très long, le gain en performance peut être considérable. Si l’API bloque parfois, alors <code>sourcoise()</code> permet de continuer le reste du workflow sans interruption. L’exécution de l’API peut ainsi être asynchrone, dans un process différent ou sur une machine différente, la synchronisation étant assurée par le système de fichier, github ou <code>{pins}</code> (à venir).</p>
+<p>Par rapport à <code>memoise::memoise()</code>, <code>sourcoise()</code> utilise systématiquement un cache sur disque, persistant, localisé dans le projet R ou quarto et destiné à être synchronisé par github. Il s’applique à un script et non à une fonction et utilise des règles d’invalidation du cache différentes :</p>
+<ul>
+<li><p>le cache est conçu principalement pour être passé entre session. Il est utilisé lors du rendu d’un .qmd et il est transportable avec les fichiers associés.</p></li>
+<li><p>le cache est invalidé si le script est modifié (similaire à l’invalidation par le corps de la fonction dans memoise::memoise()).</p></li>
+<li><p>le cache est invalidé en fonction du delai entre deux exécutions. Il est possible de ré-exécuter le code si il n’a pas été exécuté depuis une heure, une journée, une semaine, etc…</p></li>
+<li><p>le cache est invalidé si un ou plusieurs fichiers (définis au préalable) ont été modifiés. Cela sert en particulier à invalider le cache si un fichier de données (<code>.csv</code> ou <code>.xls</code>) a été modifié.</p></li>
+<li><p>le cache est invalidé si les arguments passés à <code>sourcoise()</code> pour le script ont été modifiés (comme dans le fonctionnement central de <code>memoise::memoise()</code>).</p></li>
+<li><p>on peut également forcer l’invalidation du cache par un paramètre passé à la fonction, éventuellement un paramètre global ou en utilisant la fonction <code>sourcoise_refresh()</code>. Ce dernier point est une différence important par rapport à <code>memoise::memoise()</code> et permet une exécution régulière du rafraichissement du cache indépendamment de l’endroit où est appelé le script.</p></li>
+<li><p>on peut logger les accès à sourcoise() ce qui permet de comprendre pourquoi le cache n’est pas invalidé et quels sont fichiers qui ont déclenché sourcoise(). Un dossier <code>logs</code> est ajouté au dossier <code>.sourcoise</code>.</p></li>
+<li><p>on peut limiter la taille du cache, par le paramètre grow_cache qui contraint l’historique du cache et par limit_mb qui empêche de mettre en cache des données au delà d’une taille limite ; par défaut 50mb, pour ne pas fâcher github.</p></li>
+</ul>
+
+
+
+
+
+</body></html>

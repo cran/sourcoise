@@ -41,14 +41,15 @@
 #' @export
 #' @examplesIf rlang::is_installed("insee")
 #' dir <- tempdir()
+#' set_sourcoise_root(dir)
 #' fs::file_copy(
-#'     fs::path_package("sourcoise", "ipch", "prix_insee.R"),
+#'     fs::path_package("sourcoise", "some_data.R"),
 #'     dir,
 #'     overwrite = TRUE)
-#' # Force execution (root is set explicitly here, it is normally deduced from project)
-#' data <- sourcoise("prix_insee.R", root = dir, force_exec = TRUE)
+#' # Force execution
+#' data <- sourcoise("some_data.R", force_exec = TRUE)
 #' # status returns the cache status
-#' sourcoise_status(root = dir)
+#' sourcoise_status()
 
 sourcoise_status <- function(
     quiet = TRUE,
@@ -71,10 +72,16 @@ sourcoise_status <- function(
       purrr::map_dfr(jsons[[a_root]], ~{
         dd <- read_mdata(.x)
         valid <- valid_meta4meta(dd, root = a_root)
+        if(is.null(dd$log_file)||length(dd$log_file)==0)
+          log_file <- ""
+        else
+          log_file <- dd$log_file
+
         tibble::tibble(
           src = tolower(dd$src),
           date = lubridate::as_datetime(dd$date),
           valid = valid$valid,
+          priority = dd$priority %||% 10,
           uid = dd$uid,
           index = dd$cc |> as.numeric(),
           timing = dd$timing,
@@ -87,7 +94,8 @@ sourcoise_status <- function(
           src_in = dd$src_in,
           data_file = dd$data_file,
           data_date = dd$data_date,
-          log_file = dd$log_file %||% "",
+          file_size = scales::label_bytes()(dd$file_size),
+          log_file = log_file,
           root =  a_root,
           src_hash = dd$src_hash,
           track_hash = list(dd$track_hash),
@@ -106,20 +114,20 @@ sourcoise_status <- function(
       qs2_orphed <- setdiff(qs2 |> purrr::list_c(), qs2_jsoned)
       purrr::walk(qs2_orphed, fs::file_delete)
     }
-
     if(nrow(cached)>0) {
       cached <- cached |>
         dplyr::arrange(.data$src, dplyr::desc(.data$date))
 
       if(prune)
         cached <- cached |>
-          dplyr::group_by(.data$src) |>
+          dplyr::group_by(.data$src, .data$args) |>
           dplyr::filter(.data$date == max(.data$date)) |>
           dplyr::ungroup()
+
       return(cached)
     }
-    if(!quiet)
-      cli::cli_alert_info("No cache data")
-    return(tibble::tibble())
   }
+  if(!quiet)
+    cli::cli_alert_info("No cache data")
+  return(tibble::tibble())
 }

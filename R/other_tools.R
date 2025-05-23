@@ -1,11 +1,5 @@
 # fonctions --------------------
 
-check_return <- function(src) {
-  src.txt <- readLines(src, warn=FALSE)
-  ret <- stringr::str_extract(src.txt, "^return\\((.*)", group=1)
-  purrr::keep(ret, ~!is.na(.x))
-}
-
 what_lapse <- function(check) {
 
   ext <- function(e) {
@@ -28,7 +22,6 @@ what_lapse <- function(check) {
   if(stringr::str_detect(check, "year"))
     return(lubridate::years(ext(check)))
 }
-
 
 unfreeze <- function(qmd_file, root, quiet=TRUE) {
   if(is.null(qmd_file))

@@ -1,7 +1,8 @@
 # calcule les différents chemins et trouve les fichiers/répertoire dont on a besoin
 
 setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
-                          lapse, nocache, limit_mb, grow_cache, log, inform=FALSE, quiet=TRUE) {
+                          lapse, nocache, limit_mb, grow_cache, log, priority,
+                          metadata, inform=FALSE, quiet=TRUE) {
   ctxt <- list()
 
   if(is.null(track))
@@ -14,6 +15,8 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
   else
     ctxt$args <- args
 
+  ctxt$argid <- digest::digest(args, algo = "crc32")
+
   ctxt$lapse <- lapse
   ctxt$quiet <- quiet
   ctxt$inform <- inform
@@ -22,20 +25,19 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
   ctxt$nocache <- nocache
   ctxt$grow_cache <- grow_cache
   ctxt$limit_mb <- limit_mb
+  ctxt$priority <- priority
+  ctxt$metadata <- metadata
 
   # on trouve le fichier
   ctxt$name <- remove_ext(path)
   ctxt$paths <- find_project_root()
-  if(is.null(root))
-    ctxt$root <- try_find_root(root, src_in)
-  else
-    ctxt$root <- fs::path_abs(root)
-
-  ctxt <- startup_log(log, ctxt)
+  ctxt$root <- try_find_root(root, src_in)
 
   ctxt$uid <- digest::digest(ctxt$root, algo = "crc32")
 
-  ctxt[["src"]] <- find_src(ctxt$root, ctxt$name)
+  ctxt <- startup_log(log, ctxt)
+
+  ctxt[["src"]] <- find_src(ctxt$root, ctxt$name, ctxt$paths)
   if(is.null(ctxt[["src"]])) {
     ctxt[["src"]] <- try_find_src(ctxt$root, ctxt$name)
     if(length(ctxt[["src"]])==0)
@@ -48,7 +50,8 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
     }
   }
 
-  ctxt$basename <- fs::path_file(ctxt$name)
+  ctxt$basename <- fs::path_file(ctxt$name) |>
+    stringr::str_c(ctxt$argid, sep = "-")
   ctxt$relname <- fs::path_rel(ctxt$src, ctxt$root)
   ctxt$reldirname <- fs::path_dir(ctxt$relname)
 
@@ -69,17 +72,17 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
   ctxt$qmd_path <- ctxt$paths$doc_path
   if(Sys.getenv("QUARTO_DOCUMENT_PATH") != "") {
     ctxt$qmd_file <- fs::path_join(c(ctxt$qmd_path, knitr::current_input())) |>
-      fs::path_ext_set("qmd") |>
+      stringr::str_c(".qmd") |>
       fs::path_norm()
   } else {
     ctxt$qmd_file <- NULL
   }
 
   if(!is.null(ctxt$qmd_file))
-    logger::log_info("qmd file : {ctxt[['qmd_file']]}")
-  logger::log_info("source file : {ctxt[['src']]}")
-  logger::log_debug("root : {ctxt[['root']]}")
-  logger::log_debug("cache : {ctxt[['full_cache_rep']]}")
+    logger::log_debug("qmd: {ctxt[['qmd_file']]}")
+  logger::log_debug("source: {ctxt[['src']]}")
+  logger::log_debug("root: {ctxt[['root']]}")
+  logger::log_debug("cache: {ctxt[['full_cache_rep']]}")
 
   ctxt$exec_wd <- exec_wd
   if(is.null(exec_wd)) {
@@ -97,7 +100,7 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
       }
     }
   }
-  logger::log_debug("wd : {ctxt[['exec_wd']]}")
+  logger::log_debug("wd: {ctxt[['exec_wd']]}")
 
   ctxt <- ctxt |>
     hash_context()
@@ -124,6 +127,7 @@ hash_context <- function(ctxt) {
   }
 
   ctxt$meta_datas <- get_mdatas(ctxt$basename, ctxt$full_cache_rep)
+
   ctxt$qmds <- purrr::map(ctxt$meta_datas, "qmd_file") |>
     purrr::list_flatten() |>
     purrr::discard(is.null) |>
@@ -151,7 +155,7 @@ startup_log <- function(log, ctxt) {
 
   if(!fs::dir_exists(log_dir))
     fs::dir_create(log_dir)
-  log_fn <- fs::path_join(c(log_dir, stringr::str_c("sourcoise_", lubridate::today() |> as.character()))) |>
+  log_fn <- fs::path_join(c(log_dir, stringr::str_c(ctxt$uid, "_", lubridate::today() |> as.character()))) |>
     fs::path_ext_set("log")
 
   logger::log_appender(logger::appender_file(log_fn))

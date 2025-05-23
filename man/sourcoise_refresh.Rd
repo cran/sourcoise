@@ -10,7 +10,7 @@ sourcoise_refresh(
   unfreeze = TRUE,
   quiet = FALSE,
   init_fn = getOption("sourcoise.init_fn"),
-  root = NULL,
+  root = getOption("sourcoise.root"),
   log = "INFO",
   .progress = TRUE
 )
@@ -54,19 +54,20 @@ It is possible to pass to refresh a function that will be executed before every 
 If packages are loaded inside the script, then this is not needed.
 
 Parameters registered ins \code{sourcoise_status()} such as \code{wd} or \code{args} are used to execute the script.
+
+Defining a \code{priority} in \code{sourcoise()}, will change the order of execution of refresh. This allows to execute first data that will be used then inside another script with \code{sourcoise()}. When a \code{sourcoise("something.r", force_exec=TRUE)} is run, inside calls to \code{sourcoise()} are \emph{not} forced. \code{priority} is a crude way -- yet efficient -- to achieve a correct execution with up to date data. Of course, all calls to \code{sourcoise()} of the same script should set the same level of priority as the last executed will be kept, with no verification done, so left to the responsability of the user.
 }
 \examples{
-\dontshow{if (rlang::is_installed("insee")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 dir <- tempdir()
+set_sourcoise_root(dir)
 fs::file_copy(
-   fs::path_package("sourcoise", "ipch", "prix_insee.R"),
+   fs::path_package("sourcoise", "some_data.R"),
    dir,
    overwrite = TRUE)
-# Force execution (root is set explicitly here, it is normally deduced from project)
-data <- sourcoise("prix_insee.R", root = dir, force_exec = TRUE)
+# Force execution
+data <- sourcoise("some_data.R", force_exec = TRUE)
 # we then refresh all caches
-sourcoise_refresh(root = dir)
-\dontshow{\}) # examplesIf}
+sourcoise_refresh()
 }
 \seealso{
 Other sourcoise: 

@@ -10,9 +10,13 @@
     sourcoise.wd = "file",
     sourcoise.unfreeze = FALSE,
     sourcoise.log = "OFF",
+    sourcoise.root = NULL,
+    sourcoise.nocache = FALSE,
     sourcoise.grow_cache = 5,
     sourcoise.limit_mb = 50,
-    sourcoise.nthreads = 1
+    sourcoise.nthreads = 1,
+    sourcoise.memoize = TRUE,
+    sourcoise.encoding = "UTF-8"
   )
 
   toset <- !(names(op.sourcoise) %in% names(op))

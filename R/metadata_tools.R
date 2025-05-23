@@ -1,5 +1,5 @@
 valid_meta4meta <- function(meta, root) {
-  cache_dir <- fs::path_dir(meta$file)
+  cache_dir <- fs::path_dir(meta$json_file)
   src_hash <- hash_file(fs::path_join(c(root, meta$src)))
   track_hash <- 0
 
@@ -73,25 +73,42 @@ get_datas <- function(name, data_rep) {
 }
 
 get_mdatas <- function(name, data_rep) {
-  pat <- stringr::str_c(name, "_([a-f0-9]){8}-([0-9]+).json")
+  name_allid <- stringr::str_remove(name, "-([a-f0-9]){8}")
+  pat <- stringr::str_c(name_allid, "-([a-f0-9]{8})_([a-f0-9]{8})-([0-9]+).json")
   files <- list()
   if(fs::dir_exists(data_rep))
-    files <- fs::dir_ls(path = data_rep, regexp = pat, fail=FALSE)
+    files <- fs::dir_ls(path = data_rep, regexp = pat, fail=FALSE, ignore.case = TRUE)
   purrr::map(files, read_mdata)
+
+  # mdatas <- RcppSimdJson::fload(files)
+  # if(length(files)==1)
+  #   mdatas <- list(mdatas)
+  # names(mdatas) <- files
+  # purrr::imap(mdatas, ~{
+  #   r <- .x
+  #   r$file <- .y
+  #   r})
 }
 
+read_json_safe <- purrr::safely(jsonlite::read_json)
+
 read_mdata <- function(path) {
-  l <- jsonlite::read_json(path) |>
-    purrr::map( ~if(length(.x)>1) purrr::list_flatten(.x) else unlist(.x) )
-  l$file <- path
-  l
+  l <- read_json_safe(path, simplifyVector = TRUE)
+  if(is.null(l$error)) {
+    l <- l$result
+    l$json_file <- path
+    return(l)
+  }
+  logger::log_error("{path} is not a json file, {l$error$message} [deleting json]")
+  fs::file_delete(path)
+  l <- list()
 }
 
 get_ddatas <- function(name, data_rep) {
   pat <- stringr::str_c(name, "_([a-f0-9]){8}-([0-9]+).qs2")
   files <- list()
   if(fs::dir_exists(data_rep))
-    files <- fs::dir_ls(path = data_rep, regexp = pat, fail=FALSE)
+    files <- fs::dir_ls(path = data_rep, regexp = pat, fail=FALSE, ignore.case=TRUE)
   res <- purrr::map(files, ~ qs2::qs_read(.x, nthreads = getOption("sourcoise.nthreads")))
   names(res) <- files
   res

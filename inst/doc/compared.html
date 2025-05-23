@@ -1,7 +1,8 @@
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.14">
+<meta name="generator" content="quarto-1.7.31">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -20,8 +21,9 @@ margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
 }
 .display.math{display: block; text-align: center; margin: 0.5rem auto;}
 
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -32,7 +34,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -109,6 +111,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>on peut également forcer l’invalidation du cache par un paramètre passé à la fonction, éventuellement un paramètre global ou en utilisant la fonction <code>sourcoise_refresh()</code>. Ce dernier point est une différence important par rapport à <code>memoise::memoise()</code> et permet une exécution régulière du rafraichissement du cache indépendamment de l’endroit où est appelé le script.</p></li>
 <li><p>on peut logger les accès à sourcoise() ce qui permet de comprendre pourquoi le cache n’est pas invalidé et quels sont fichiers qui ont déclenché sourcoise(). Un dossier <code>logs</code> est ajouté au dossier <code>.sourcoise</code>.</p></li>
 <li><p>on peut limiter la taille du cache, par le paramètre grow_cache qui contraint l’historique du cache et par limit_mb qui empêche de mettre en cache des données au delà d’une taille limite ; par défaut 50mb, pour ne pas fâcher github.</p></li>
+<li><p><code>sourcoise()</code> utilise en fait <code>{memoise}</code> pour ne pas charger 2 fois les données à partir du disque. Le gain est marginal pour de petites données mais peut jouer lorsque les données sont volumineuses (divise par 100 l’accès pour des données de 50Mb, par 10 pour des données de 5Mb, par 2 pour 500kb).</p></li>
 </ul>
 
 

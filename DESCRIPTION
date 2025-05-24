@@ -1,7 +1,7 @@
 Package: sourcoise
 Type: Package
 Title: Source a Script and Cache
-Version: 0.6.0
+Version: 0.6.1
 Authors@R: c(
     person(
       "Xavier", "Timbeau",
@@ -28,8 +28,8 @@ SystemRequirements: Quarto command line tools
         (https://github.com/quarto-dev/quarto-cli).
 BugReports: https://github.com/xtimbeau/sourcoise/issues
 NeedsCompilation: no
-Packaged: 2025-05-23 10:08:36 UTC; timbe
+Packaged: 2025-05-24 13:57:00 UTC; xt
 Author: Xavier Timbeau [aut, cre, cph]
 Maintainer: Xavier Timbeau <xavier.timbeau@sciencespo.fr>
 Repository: CRAN
-Date/Publication: 2025-05-23 10:20:02 UTC
+Date/Publication: 2025-05-24 15:30:02 UTC

@@ -1,4 +1,4 @@
-6d23bb568b671ba22b3329063ce746d0 *DESCRIPTION
+c697d7676fbda8f0977cb56d5b135410 *DESCRIPTION
 7c105a3eab82028dc6b610bb78f1a030 *LICENSE
 8c067574e084417dad768fea7accca78 *NAMESPACE
 ee044d94dc50a4c0cfd0acfea14d79bb *NEWS.md
@@ -40,7 +40,7 @@ ccdda0b0a9fc0fd1ad5e55b2d3492dfc *man/sourcoise_meta.Rd
 92e1ae40421423cc327ccf2c2506c275 *man/sourcoise_status.Rd
 d03fa04c0fd460c3911f5e93009c4125 *tests/testthat.R
 f35e1b231451a3d1cb004aadd537e946 *tests/testthat/test-source_args.R
-d06aa848be97a4d1c9a3f961b439fa9d *tests/testthat/test-sourcoise.R
+6349e47ef0d0f54da5a16aad5b82c324 *tests/testthat/test-sourcoise.R
 e1c01967fa69331dbabe13da9c0b8a48 *tests/testthat/test-utils.R
 416260dcb09efe56441b94b27cb16438 *vignettes/_quarto.yaml
 b82160952f0ddd31637eadbb2d3a92c0 *vignettes/advanced.qmd

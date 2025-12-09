@@ -57,8 +57,6 @@
 #' @param wd (character) if `project` working directory for the execution of script will be the root of the project. If `file` then it will be the dir of the script (default) If `qmd`, then working dir will be the dir in which the calling `qmd` is. Current directory is restored after execution (successful or failed).
 #' @param quiet (boolean) mute messages and warnings from script execution.
 #' @param inform (boolean) Display logs on console, even if logging is disabled with threshold level "INFO".
-#' @param priority (integer) (default 10) can be used as a way to control the order of execution when refreshing data (see `sourcoise_refresh()`)
-
 #'
 #' @family sourcoise
 #' @return data (list ou ce que le code retourne)
@@ -97,9 +95,8 @@ sourcoise <- function(
     prevent_exec = getOption("sourcoise.prevent_exec"),
     metadata = getOption("sourcoise.metadata"),
     wd = getOption("sourcoise.wd"),
-    quiet = TRUE,
-    inform = FALSE,
-    priority = 10) {
+    quiet = getOption("sourcoise.quiet"),
+    inform = FALSE) {
 
   sourcoise_(path = path,
              args = args,
@@ -117,8 +114,7 @@ sourcoise <- function(
              inform = inform,
              log = getOption("sourcoise.log"),
              grow_cache = getOption("sourcoise.grow_cache"),
-             limit_mb = getOption("sourcoise.limit_mb"),
-             priority = priority)
+             limit_mb = getOption("sourcoise.limit_mb"))
 }
 
 ## real function
@@ -140,8 +136,11 @@ sourcoise_ <- function(
     inform = FALSE,
     log = getOption("sourcoise.log"),
     grow_cache = getOption("sourcoise.grow_cache"),
-    limit_mb = getOption("sourcoise.limit_mb"),
-    priority = 10) {
+    limit_mb = getOption("sourcoise.limit_mb")) {
+
+  refreshing <- getOption("sourcoise.refreshing") %||% FALSE
+  if(refreshing)
+    log <- "INFO"
 
   ctxt <- setup_context(
     path = path,
@@ -157,29 +156,31 @@ sourcoise_ <- function(
     limit_mb = limit_mb,
     log = log,
     inform = inform,
-    priority = priority,
     quiet = quiet,
     metadata = metadata)
 
   if(is.null(ctxt)) {
-    logger::log_error("file {path} not found")
-    return(list(error = glue::glue("file {path} not found"), ok = FALSE, log_file = ctxt$log_file))
+    logger::log_fatal("file {path} not found")
+    cli::cli_alert("file {path} not found")
+    return(list(error = glue::glue("file {path} not found"),
+                ok = FALSE,
+                log_file = ctxt$log_file))
   }
 
-  if(is.null(force_exec)) force <- FALSE else if(force_exec=="TRUE") force <- TRUE else force <- FALSE
-  if(is.null(prevent_exec))
-    prevent <- FALSE
-  else if(prevent_exec=="TRUE")
-    prevent <- TRUE
-  else
-    prevent <- FALSE
+  priority <- ctxt$priority
+  force <- nuorf(force_exec)
+  if(should_i_do(ctxt$src))
+    force <- TRUE
+  prevent <- nuorf(prevent_exec)
   our_data <- list()
+
   if(force&!prevent) {
-    our_data <- exec_source(ctxt)
+    our_data <- super_exec_source(ctxt)
     if(our_data$ok=="exec") {
       our_data <- cache_data(our_data, ctxt)
       logger::log_success(
         "{ctxt$relname} (forced) in {round(our_data$timing, 2)} sec. ({scales::label_bytes()(our_data$size)})")
+      mark_as_done(ctxt$src)
       return(data_returned(our_data, ctxt))
     }
   }
@@ -190,38 +191,75 @@ sourcoise_ <- function(
 
   if(length(good_datas)==0) {
     if(prevent) {
-      logger::log_warn("No cached data, execution prevented")
+      logger::log_fatal("No cached data, execution prevented")
       return(list(error = "No cache&prevent", ok = FALSE, log_file = ctxt$log_file))
     }
-    if(!is.null(our_data))
-      our_data <- exec_source(ctxt)
+    if(length(our_data)==0)
+      our_data <- super_exec_source(ctxt)
     if(our_data$ok=="exec") {
       our_data <- cache_data(our_data, ctxt)
       logger::log_success(
         "{ctxt$relname} (exec. no cache found) in {round(our_data$timing, 2)} sec. ({scales::label_bytes()(our_data$size)})")
 
       return(data_returned(our_data, ctxt))
-
     } else {
       if(length(ctxt$meta_datas)==0) {
-        msg <- "{ctxt$relname} failed, no cache: \n{our_data$error$message}"
-        if(ctxt$quiet)
-          cli::cli_alert_danger(msg)
-        logger::log_error(msg)
-        return(our_data)
+        logger::log_error("{ctxt$relname} failed, no cache")
+        if(!ctxt$quiet)
+          cli::cli_alert(our_data$error |> errorCondition())
+        return(data_returned(our_data, ctxt))
       }
       return_data <- pick_gooddata(ctxt$meta_datas, ctxt)
+      return_data$error <- our_data$error
       msg <-
         "{ctxt$relname} failed, returning invalid cache ({scales::label_bytes()(return_data$size)})"
-      if(ctxt$quiet)
-        cli::cli_alert_danger(msg)
       logger::log_warn(msg)
+      if(!ctxt$quiet)
+        cli::cli_alert(our_data$error|> errorCondition())
     }
   } else {
     return_data <- pick_gooddata(good_datas, ctxt)
     logger::log_success("{ctxt$relname} valid cache ({scales::label_bytes()(return_data$size)})")
+    if(length(our_data)!=0 && our_data$ok == FALSE ) {
+      logger::log_error("  but {ctxt$relname} failed")
+      if(!ctxt$quiet)
+        cli::cli_alert(our_data$error|> errorCondition())
+    }
   }
 
   return(data_returned(return_data, ctxt))
 }
 
+# helpers
+nuorf <- function(x) {
+  if(is.null(x))
+    return(FALSE)
+  if(x)
+    return(TRUE)
+  return(FALSE)
+}
+
+should_i_do <- function(src) {
+  refreshing <- getOption("sourcoise.refreshing")
+  if(is.null(refreshing) || !refreshing)
+    return(FALSE)
+  done <- getOption("sourcoise.refreshing.done")
+  src <- src |> fs::path_ext_remove() |> as.character()
+  if(src %in% done | !(src %in% getOption("sourcoise.refreshing.2do"))) {
+    options(sourcoise.refreshing.hit = c(getOption("sourcoise.refreshing.hit"), src))
+    return(FALSE) }
+  return(TRUE)
+}
+
+mark_as_done <- function(src) {
+  refreshing <- getOption("sourcoise.refreshing")
+  if(is.null(refreshing) || !refreshing)
+    return(NULL)
+  src <- src |>
+    fs::path_ext_remove() |>
+    as.character()
+  done <- getOption("sourcoise.refreshing.done")
+  done <- c(done, src) |> unique()
+  options(sourcoise.refreshing.done =  done)
+  return(done)
+}

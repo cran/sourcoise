@@ -1,6 +1,6 @@
 dir <- tempdir()
 set_sourcoise_root(dir)
-sourcoise_clear()
+sourcoise_clear_all()
 fs::file_copy(
   fs::path_package("sourcoise", "ipch", "prix_insee.R"),
   dir,
@@ -18,7 +18,7 @@ data <- sourcoise("prix_insee.R", force_exec = TRUE, metadata = TRUE)
 
 test_that("We get data", {
   expect(
-    identical(x=names(data$data), y=c("ipcha", "ipchm", "ipch")),
+    identical(x=names(data$data), y=c("y", "ipch", "DATE", "ipch", "IDBANK", "DATE", "ipch" )),
     "Execution is wrong")
 })
 cache_dir <- NULL
@@ -106,7 +106,7 @@ test_that("meta ok when no cache", {
 
 ## sourcoise_status ----------------
 
-status <- sourcoise_status()
+status <- sourcoise_status(short=FALSE)
 
 test_that("sourcoise_status", {
   expect(tibble::is_tibble(status)&nrow(status)>0,
@@ -114,7 +114,7 @@ test_that("sourcoise_status", {
 })
 
 test_that("sourcoise_status", {
-  expect(all(c("src", "root", "args", "track", "lapse") %in% names(status)),
+  expect(all(c("src", "root", "args", "track", "lapse", "json_file") %in% names(status)),
          "status is not well formed")
 })
 
@@ -129,7 +129,7 @@ test_that("sourcoise_refresh", {
 
 ## sourcoise_clear ----------------
 
-sourcoise_clear()
+sourcoise_clear_all()
 status <- sourcoise_status()
 
 

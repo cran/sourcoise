@@ -4,16 +4,16 @@
 \alias{sourcoise_status}
 \title{Cache status of sourcoise}
 \usage{
-sourcoise_status(quiet = TRUE, root = NULL, prune = TRUE, clean = FALSE)
+sourcoise_status(short = TRUE, quiet = TRUE, root = NULL, prune = TRUE)
 }
 \arguments{
+\item{short}{(boolean) (deafault \code{TRUE}) return a simplified tibble}
+
 \item{quiet}{(boolean) (default \code{TRUE}) no messages during execution}
 
 \item{root}{(string) (default \code{NULL}) force root to a defined path, advanced and not recommanded use}
 
 \item{prune}{(boolean) (default \code{TRUE}) clean up status to display only on relevant cache. However, does not clean other cache files.}
-
-\item{clean}{(boolean) (default \code{FALSE}) check if some data files have not json referring to them and cleans if any.}
 }
 \value{
 tibble of cached files (see details for structure)
@@ -40,7 +40,7 @@ Data returned is:
 \item \code{args}: arguments passed to R script
 \item \code{json_file}: path to the file keeping cache information
 \item \code{qmd_file}: list of path to qmd files calling this script (relevant only for quarto projects)
-\item \code{src_in}: localisaiton of cache option
+\item \code{src_in}: localisation of cache option
 \item \code{data_file}: path to data cached
 \item \code{data_date}: date and time of last save of data
 \item \code{log_file}: path to log file, if logging activated
@@ -53,7 +53,7 @@ Data returned is:
 }
 }
 \examples{
-\dontshow{if (rlang::is_installed("insee")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (rlang::is_installed("insee")) withAutoprint(\{ # examplesIf}
 dir <- tempdir()
 set_sourcoise_root(dir)
 fs::file_copy(
@@ -70,6 +70,7 @@ sourcoise_status()
 Other sourcoise: 
 \code{\link{sourcoise}()},
 \code{\link{sourcoise_clear}()},
+\code{\link{sourcoise_clear_all}()},
 \code{\link{sourcoise_refresh}()},
 \code{\link{sourcoise_reset}()}
 }

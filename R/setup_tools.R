@@ -1,21 +1,20 @@
 # calcule les différents chemins et trouve les fichiers/répertoire dont on a besoin
 
 setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
-                          lapse, nocache, limit_mb, grow_cache, log, priority,
+                          lapse, nocache, limit_mb, grow_cache, log,
                           metadata, inform=FALSE, quiet=TRUE) {
   ctxt <- list()
-
   if(is.null(track))
     ctxt$track <- list()
   else
     ctxt$track <- track
 
-  if(is.null(args))
+  if(length(args)==0)
     ctxt$args <- list()
   else
     ctxt$args <- args
 
-  ctxt$argid <- digest::digest(args, algo = "crc32")
+  ctxt$argid <- digest::digest(ctxt$args, algo = "crc32")
 
   ctxt$lapse <- lapse
   ctxt$quiet <- quiet
@@ -25,17 +24,16 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
   ctxt$nocache <- nocache
   ctxt$grow_cache <- grow_cache
   ctxt$limit_mb <- limit_mb
-  ctxt$priority <- priority
   ctxt$metadata <- metadata
 
   # on trouve le fichier
   ctxt$name <- remove_ext(path)
   ctxt$paths <- find_project_root()
-  ctxt$root <- try_find_root(root, src_in)
+  ctxt$root <- try_find_root(root, src_in) |> as.character()
 
-  ctxt$uid <- digest::digest(ctxt$root, algo = "crc32")
+  ctxt$uid <- digest::digest(as.character(ctxt$root), algo = "crc32")
 
-  ctxt <- startup_log(log, ctxt)
+  ctxt$log_file <- startup_log2(log, ctxt$root, ctxt$uid)
 
   ctxt[["src"]] <- find_src(ctxt$root, ctxt$name, ctxt$paths)
   if(is.null(ctxt[["src"]])) {
@@ -60,6 +58,24 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
       fs::path_norm()
     ctxt$full_cache_rep <- fs::path_join(c(ctxt$root_cache_rep, ctxt$reldirname)) |>
       fs::path_norm()
+    # vérifier que .sourcoise n'est pas dans le répertoire du source,
+    # dans ce cas, c'est celui là qu'on prend
+    sourcoise_file <- fs::path_join(c(ctxt$root, ctxt$reldirname, ".sourcoise"))
+    if(fs::dir_exists(sourcoise_file)) {
+      istheresourcoise <- fs::path_join(c(sourcoise_file, fs::path_file(ctxt$src) |>
+                                            fs::path_ext_remove()))
+      istheresourcoise <- fs::dir_ls(sourcoise_file) |>
+        stringr::str_detect(istheresourcoise) |>
+        any()
+      if(istheresourcoise) {
+        file_path <- fs::path_dir(ctxt$src)
+        ctxt$full_cache_rep <- fs::path_join(c(file_path, ".sourcoise"))
+        wd <- "file"
+        logger::log_warn(
+          "scr_in is 'project' but cache files found in file folder, switching to src_in='file'.")
+        logger::log_warn("If it is not what you want, please delete {ctxt$full_cache_rep}")
+      }
+    }
   }
   if(src_in == "file") {
     file_path <- fs::path_dir(ctxt$src)
@@ -101,9 +117,13 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
     }
   }
   logger::log_debug("wd: {ctxt[['exec_wd']]}")
-
   ctxt <- ctxt |>
     hash_context()
+  if(length(ctxt$meta_datas)>0) {
+    ctxt$priority <- extract_priority(ctxt)
+  } else {
+    ctxt$priority <- 10
+  }
 
   return(ctxt)
 }
@@ -111,45 +131,45 @@ setup_context <- function(path, root, src_in, exec_wd, wd, track, args,
 # calcule les hashs et ajoute les métadonnées au contexte
 
 hash_context <- function(ctxt) {
-
   ctxt$src_hash <- hash_file(ctxt$src)
-  ctxt$arg_hash <- digest::digest(ctxt$args, "crc32")
-  ctxt$track_hash <- 0
-
-  if(length(ctxt$track) > 0) {
-    track_files <- purrr::map(ctxt$track, ~fs::path_join(c(ctxt$root, .x)))
-    ok_files <- purrr::map_lgl(track_files, fs::file_exists)
-    if(any(ok_files))
-      ctxt$track_hash <- hash_file(as.character(track_files[ok_files]))
-    else {
-      cli::cli_alert_warning("Tracked files not found ({track_files[[!ok_files]]}), check your paths.")
-    }
-  }
-
+  ctxt$arg_hash <- ctxt$argid
   ctxt$meta_datas <- get_mdatas(ctxt$basename, ctxt$full_cache_rep)
 
-  ctxt$qmds <- purrr::map(ctxt$meta_datas, "qmd_file") |>
+  ctxt$qmds <- purrr::map(ctxt$meta_datas, ~.x[["qmd_file"]]) |>
     purrr::list_flatten() |>
     purrr::discard(is.null) |>
     unlist() |>
     unique()
   ctxt$new_qmds <- unique(c(ctxt$qmds, ctxt$qmd_file))
 
+  ctxt$track_hash <- 0
+  already_tracked <- purrr::map(ctxt$meta_datas, ~.x[["track"]] ) |>
+    purrr::list_flatten() |>
+    purrr::discard(is.null) |>
+    unlist() |>
+    unique()
+  tracked <- unique(ctxt$track, already_tracked)
+  if(length(tracked) > 0) {
+    track_files <- purrr::map(track, ~fs::path_join(c(ctxt$root, .x)))
+    ok_files <- purrr::map_lgl(track_files, fs::file_exists)
+    tracked <- track_files[ok_files]
+    if(any(ok_files))
+      ctxt$track_hash <- hash_file(as.character(ctxt$track)) |> digest::digest(algo = "sha1")
+    else {
+      logger::log_info("Tracked files not found ({track_files[[!ok_files]]}), check your paths.")
+    }
+  }
+  ctxt$track <- tracked
   return(ctxt)
 }
 
 startup_log <- function(log, ctxt) {
   if(log==FALSE)
     log <- "OFF"
-  log_dir <- fs::path_join(c(ctxt$root,".sourcoise", "logs"))
+  log_dir <- fs::path_join(c(ctxt$root,".sourcoise_logs"))
   logger::log_threshold(log)
 
-  if(!ctxt$quiet)
-    logger::log_appender(logger::appender_stdout)
-
   if(log == "OFF") {
-    if(!ctxt$quiet)
-      logger::log_threshold("INFO")
     return(ctxt)
   }
 
@@ -157,10 +177,29 @@ startup_log <- function(log, ctxt) {
     fs::dir_create(log_dir)
   log_fn <- fs::path_join(c(log_dir, stringr::str_c(ctxt$uid, "_", lubridate::today() |> as.character()))) |>
     fs::path_ext_set("log")
-
   logger::log_appender(logger::appender_file(log_fn))
-
-  ctxt$log_file <- fs::path_rel(log_fn, getwd() |> fs::path_abs())
+  ctxt$log_file <- fs::path_rel(log_fn, getwd() |> path_abs())
 
   return(ctxt)
+}
+
+startup_log2 <- function(log, root, uid = digest::digest(as.character(root), algo = "crc32")) {
+  if(log==FALSE)
+    log <- "OFF"
+  log_dir <- fs::path_join(c(root,".sourcoise_logs")) |>
+    path_abs()
+  logger::log_threshold(log)
+
+  if(log == "OFF") {
+    return(NULL)
+  }
+
+  if(!fs::dir_exists(log_dir))
+    fs::dir_create(log_dir)
+  log_fn <- fs::path_join(c(log_dir, stringr::str_c(uid, "_", lubridate::today() |> as.character()))) |>
+    fs::path_ext_set("log")
+  logger::log_appender(logger::appender_file(log_fn))
+  log_file <- fs::path_rel(log_fn, getwd() |> path_abs())
+
+  return(log_file)
 }

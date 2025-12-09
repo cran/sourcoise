@@ -1,4 +1,29 @@
+# sourcoise 1.0.0
+
+* performance of data gathering has been largely improved, thanks to `RcppSimdJson` package
+* performance in case of a large number of cached files has been largely improved thanks to a early selection of candidates
+* helpers have been introduced to select easily in `sourcoise_refresh` what will be refreshed
+* when refreshing, execution is forced for subcalls to sourcoise, only once, in order to allow for consistent refresh
+* priority is used to order execution of files when refreshing
+* function to set priority (internal use only)
+* short output of `sourcoise_status()`
+* cleaning (with `sourcoise_clear()` and `sourcoise_clear_all()`) of cached data when source file does not exist any more
+* better handling of error messages, logged and displayed
+* critical errors displayed, such as unfound file
+* not quiet by default
+* `sourcoise_refresh` identify and warn when new data has been generated
+* exec engine is based on `parse` and `eval` which solve some bugs (like when returning a ggplot)
+* `lobstr::object_size` fails on S7 object, this is treated as an exception 
+* `sourcoise_refresh` warns when an error occurs and diplays the error
+* multiple minor bugs have been solved
+
 # sourcoise 0.6.1
+
+CRAN test failed, unfailed.
+
+# sourcoise 0.6.1
+
+CRAN test failed
 
 # sourcoise 0.6.0
 
@@ -9,16 +34,16 @@
 * enregistre correctement le chemin du log si le cache est invalide.
 * les arguments sont employés (par un *hash*) pour différencier les caches, ce qui permet de les utiliser sans problème.
 * le log est maintenant spécifique à chaque utilisateur.
-* cas où le nom de fichier comporte un "." (ne considère pas ça comme une extension).
-* cas où il n'y a pas de projet (root=wd dans ce cas) et `sourcoise()` fonctionne (merci François).
+* cas où le nom de fichier comporte un "." (ne considère pas ça comme une extension). 
+* cas où il n'y a pas de projet (root=wd dans ce cas) et `sourcoise()` fonctionne (merci François G.).
 * nommage correct du fichier si il n'y a pas d'arguments.
 * différencie bien les scripts selon les arguments lors de `status` ou `refresh`
 * vérifie que le json est correctement formé à la lecture (merci Elliot)
-* force l'encodage à être selon l'otion `sourcoise.encoding` et à être `UTF-8` pour foncitonner sur le multiplateforme avec macOS et windows
+* force l'encodage à être selon l'option `sourcoise.encoding` et à être `UTF-8` pour fonctionner sur le multiplateforme avec macOS et windows
 
 ## ajouts
 
-* le paramètre `priority` permet de controller l'ordre d'exécution dans le cas d'un refresh, afin de traiter les cascades d'exécution.
+* le paramètre `priority` permet de controller l'ordre d'exécution dans le cas d'un refresh, afin de traiter sommairement les cascades d'exécution.
 * simplification des paramètres de `sourcoise()`. Les paramètres enlevés sont fixés globalement par `options()`.
 * la fonction `set_sourcoise_root()` permet de fixer la racine de `sourcoise`.
 * la fonction `sourcoise_meta()` renvoie les métadonnées directement (sans les datas donc).

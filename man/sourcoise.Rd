@@ -13,9 +13,8 @@ sourcoise(
   prevent_exec = getOption("sourcoise.prevent_exec"),
   metadata = getOption("sourcoise.metadata"),
   wd = getOption("sourcoise.wd"),
-  quiet = TRUE,
-  inform = FALSE,
-  priority = 10
+  quiet = getOption("sourcoise.quiet"),
+  inform = FALSE
 )
 }
 \arguments{
@@ -38,8 +37,6 @@ sourcoise(
 \item{quiet}{(boolean) mute messages and warnings from script execution.}
 
 \item{inform}{(boolean) Display logs on console, even if logging is disabled with threshold level "INFO".}
-
-\item{priority}{(integer) (default 10) can be used as a way to control the order of execution when refreshing data (see \code{sourcoise_refresh()})}
 }
 \value{
 data (list ou ce que le code retourne)
@@ -102,7 +99,7 @@ If returned data after execution is not different than previously cached data, t
 }
 
 \examples{
-\dontshow{if (rlang::is_installed("insee")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (rlang::is_installed("insee")) withAutoprint(\{ # examplesIf}
 dir <- tempdir()
 set_sourcoise_root(dir)
 fs::file_copy(
@@ -114,7 +111,7 @@ data <- sourcoise("some_data.R", force_exec = TRUE)
 # The second time cache is used
 data <- sourcoise("some_data.R")
 \dontshow{\}) # examplesIf}
-\dontshow{if (rlang::is_installed(c("bench"))) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (rlang::is_installed(c("bench"))) withAutoprint(\{ # examplesIf}
 # Performance and mem test
 dir <- tempdir()
 set_sourcoise_root(dir)
@@ -131,6 +128,7 @@ bench::mark(
 \seealso{
 Other sourcoise: 
 \code{\link{sourcoise_clear}()},
+\code{\link{sourcoise_clear_all}()},
 \code{\link{sourcoise_refresh}()},
 \code{\link{sourcoise_reset}()},
 \code{\link{sourcoise_status}()}

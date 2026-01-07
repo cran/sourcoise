@@ -7,6 +7,8 @@
 #' @param args Named list of arguments that were passed to the script, if any. Default is `NULL`.
 #'   This is used to identify the specific cached version when the script was executed with
 #'   different argument sets.
+#' @param root (defaut `NULL`) the root of the project (you'd better rely on sourcoise for that one)
+#' @param quiet (defaut `FALSE`) should we say something ?
 #'
 #' @returns A named list containing cache metadata with the following elements:
 #' \describe{
@@ -43,16 +45,17 @@
 #' print(meta$timing)  # View execution time
 #' print(meta$ok)      # Check cache status
 #'
-sourcoise_meta <- function(path, args=NULL) {
+sourcoise_meta <- function(path, args = NULL, root = NULL, quiet = FALSE) {
+
   ctxt <- setup_context(
     path = path,
-    root = getOption("sourcoise.root"),
+    root = root,
     src_in = getOption("sourcoise.src_in"),
     exec_wd = NULL,
     wd = getOption("sourcoise.wd"),
-    track = NULL,
+    track = list(),
     args = args,
-    lapse = "never",
+    lapse = NULL,
     nocache = FALSE,
     grow_cache = getOption("sourcoise.grow_cache"),
     limit_mb = getOption("sourcoise.limit_mb"),
@@ -61,22 +64,32 @@ sourcoise_meta <- function(path, args=NULL) {
     quiet = TRUE,
     metadata = TRUE)
 
-  ctxt <- valid_metas(ctxt)
+  meta <- list()
 
-  good_datas <- ctxt$meta_datas |> purrr::keep(~.x$valid)
-  if(length(good_datas)==0)
-    if(length(ctxt$meta_datas)>=1) {
-      nogood_data <- ctxt$meta_datas[which.max(purrr::map_chr(ctxt$meta_datas, "data_date") |> as.Date())]
-      nogood_data$ok <- "invalid cache"
-      return(nogood_data[c("ok", "timing", "date", "size", "args",
-                               "lapse", "track", "qmd_file", "log_file", "file_size",
-                               "data_date", "data_file", "json_file")])
-    } else
-    return(list(ok="no cache data"))
+  if(is.null(ctxt)) {
+    meta$ok <- "file {path} not found" |> glue::glue() }
 
-  good_datas[[1]]$ok <- "cache ok&valid"
+  if(!is.null(ctxt)) {
+    ctxt <- valid_meta1(ctxt)
+    meta <- ctxt$meta1
+    meta <- purrr::list_modify(meta, !!!ctxt$meta_valid)
 
-  return(good_datas[[1]][c("ok", "timing", "date", "size", "args",
-                           "lapse", "track", "qmd_file", "log_file", "file_size",
-                           "data_date", "data_file", "json_file")])
+    if(meta$valid)
+      meta$ok <- "cache ok&valid"
+    if(!meta$data_exists)
+      meta$ok <- "no cache"
+    if(!meta$valid_src&meta$data_exists)
+      meta$ok <- "cache invalid -- source file changed"
+    if(!meta$valid_lapse&meta$data_exists)
+      meta$ok <- "cache expired"
+    if(!meta$valid_track&meta$data_exists)
+      meta$ok <- "cache invalid -- tracked filed changed"
+
+    meta$date <- lubridate::as_datetime(meta$date, tz=Sys.timezone())
+    meta$data_date <- lubridate::as_datetime(meta$data_date, tz=Sys.timezone())
+  }
+  if(!quiet)
+    cli::cli_alert_info(meta$ok)
+
+  return(meta)
 }

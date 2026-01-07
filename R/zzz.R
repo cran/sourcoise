@@ -5,7 +5,6 @@
     sourcoise.prevent_exec = FALSE,
     sourcoise.metadata = FALSE,
     sourcoise.init_fn = NULL,
-    sourcoise.lapse = "never",
     sourcoise.src_in = "project",
     sourcoise.wd = "file",
     sourcoise.unfreeze = FALSE,
@@ -23,15 +22,20 @@
   toset <- !(names(op.sourcoise) %in% names(op))
   if (any(toset)) options(op.sourcoise[toset])
 
-  if(rlang::is_installed("memoise"))
-    read_data_from_cache <<- memoise::memoise(read_data_from_cache)
+  if(rlang::is_installed("memoise")) {
+    read_data <<- memoise::memoise(read_data)
+  }
 }
 
-utils::globalVariables(c("json_file", "index", "short_json_file", "uid",  "src", "cache_rep", "data_file",
-                         "full_cache_rep", "ffn", "cur_src_hash", "track", "lapse", "cur_arg_hash",
-                         "cur_track_hash", "log_file", "src_hash", "arg_hash", "track_hash", "valid_src",
-                         "valid_args", "valid_track", "src_exist", "data_exist", "valid", "priority",
-                         "cc", "timing", "size", "wd",  "qmd_file", "src_in", "data_date", "file_size",
-                         "data_hash", "uid", "argsid", "src",  "json_file", "name"))
+utils::globalVariables(
+  c("json_file", "index", "short_json_file", "uid",  "src", "cache_rep", "upcache_rep", "data_file",
+    "full_cache_rep", "ffn", "cur_src_hash", "track", "lapse", "cur_arg_hash",
+    "cur_track_hash", "log_file", "src_hash", "arg_hash", "track_hash", "valid_src",
+    "valid_args", "valid_track", "src_exist", "data_exist", "valid", "priority",
+    "cc", "timing", "size", "wd",  "qmd_file", "src_in", "data_date", "file_size",
+    "data_hash", "uid", "argid", "src",  "json_file", "name", "last_exec", "last_update",
+    "vsrc"))
 
 utils::globalVariables(c(".data"))
+
+.datatable.aware <- TRUE

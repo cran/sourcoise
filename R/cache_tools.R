@@ -1,77 +1,46 @@
 #' @importFrom rlang .data
 #' @noRd
 cache_data <- function(data, ctxt) {
-  pat <- stringr::str_c(ctxt$basename, "_([a-f0-9]{8})-([0-9]+)\\.json")
-  files <- tibble::tibble()
 
-  if(fs::dir_exists(ctxt$full_cache_rep)) {
-    files <- fs::dir_info(path = ctxt$full_cache_rep, regexp = pat) |>
-      dplyr::mutate(uid = stringr::str_extract(.data$path, pat, group=1),
-                    cc = stringr::str_extract(.data$path, pat, group=2) |> as.numeric())
-  }
-  cc <- 1
-  exists <- FALSE
+  all_metas <- get_all_metadata(ctxt)
   new_data_hash <- digest::digest(data$data)
 
-  if(nrow(files)>0) {
-    uids <- files$uid
-    ccs <- files$cc
-    hashes <- purrr::map_dfr(
-      files$path, ~{
-        mdata <- read_mdata(.x)
-        tibble::tibble(
-          path = .x,
-          data_hash = mdata$data_hash,
-          data_file = mdata$data_file,
-          data_date = mdata$data_date,
-          file_size = mdata$file_size)
-      }) |>
-      dplyr::filter(.data$data_hash == new_data_hash)
-    if(nrow(hashes)>0) {
-      hashes <- hashes |>
-        dplyr::slice(1)
-      exists_data_file <- hashes |>
+  exist <- FALSE
+  if(nrow(all_metas)>0) {
+    meta <- all_metas |>
+      dplyr::filter(.data$data_hash == new_data_hash) |>
+      dplyr::slice(1)
+    if(nrow(meta)==1) {
+      exist <- TRUE
+      exists_data_file <- meta |>
         dplyr::pull(.data$data_file) |>
         fs::path_file()
 
       exists_data_file <- fs::path_join(c(ctxt$full_cache_rep, exists_data_file))
-      exists <- fs::file_exists(exists_data_file)
-      finfo <- fs::file_info(exists_data_file)
+      exists <- file.exists(exists_data_file)
+      finfo <- file.info(exists_data_file)
       exists_file_size <- finfo$size
-      exists_data_date <- hashes |> dplyr::pull(.data$data_date) |> as.character()
+      exists_data_date <- meta |> dplyr::pull(.data$data_date) |> as.character()
     }
-    cc <- max(files$cc, na.rm = TRUE) + 1
   }
-  if(!fs::dir_exists(ctxt$full_cache_rep))
-    fs::dir_create(ctxt$full_cache_rep, recurse=TRUE)
+  if(!dir.exists(ctxt$full_cache_rep))
+    dir.create(ctxt$full_cache_rep, recursive=TRUE)
   data$data_hash <- new_data_hash
-  data$id <- stringr::str_c(ctxt$uid, "-", cc)
-  data$uid <- ctxt$uid
-  data$cc <- cc
-  json_fn <-
-    fs::path_join(c(ctxt$full_cache_rep,
-                    stringr::str_c(ctxt$basename, "_", stringr::str_c(data$id, ".json")))) |>
-    path_abs()
-  data$json_file <- json_fn
   if(!ctxt$nocache) {
     les_metas <- data
-    les_metas$data <- NULL
-    les_metas$file <- NULL
-    les_metas$ok <- NULL
-    les_metas$id <- NULL
     les_metas$priority <- ctxt$priority
-
-    if(!exists) {
+    if(!exist) {
       fnd <- fs::path_join(
-        c(ctxt$full_cache_rep,
-          stringr::str_c(ctxt$basename, "_", stringr::str_c(data$data_hash, ".qs2"))))
+        c(ctxt$root_cache_rep,
+          stringr::str_c(ctxt$cachebasename, "_", stringr::str_c(data$data_hash, ".qs2"))))
       qs2::qs_save( data$data, file = fnd, nthreads = getOption("sourcoise.nthreads") )
-      f_i <- fs::file_info(fnd)
+      f_i <- file.info(fnd)
       les_metas$file_size <- f_i$size
-      les_metas$data_date <- f_i$modification_time |> as.character()
+      les_metas$data_date <- f_i$mtime |> as.character()
       if(f_i$size > ctxt$limit_mb*1024*1024) {
         fs::file_delete(fnd)
-        logger::log_warn("cached data not saved because ({scales::label_bytes()(file_size)} is over the {ctxt$limit_md} Mb limit.")
+        logger::log_warn(
+          "cached data not saved ({fs::as_fs_bytes(file_size)} -- over the {ctxt$limit_md} Mb limit.")
       }
     } else {
       fnd <- exists_data_file
@@ -82,8 +51,7 @@ cache_data <- function(data, ctxt) {
     if(!is.null(ctxt$log_file))
       les_metas$log_file <- ctxt$log_file |> fs::path_rel(ctxt$root)
     data$data_date <- les_metas$data_date
-    les_metas$json_file <- fs::path_rel(json_fn, ctxt$root)
-    jsonlite::write_json(les_metas, path = json_fn)
+    data$json_file <- write_meta(les_metas, ctxt)
     prune_cache(ctxt)
   }
   return(data)
@@ -95,7 +63,7 @@ prune_cache <- function(ctxt) {
   if(is.infinite(ctxt$grow_cache))
     return(NULL)
 
-  md <- get_mdatas(ctxt$basename, ctxt$full_cache_rep)
+  md <- get_mdatas(ctxt$cachebasename, ctxt$full_cache_rep, ctxt$root)$meta1
 
   pairs <- purrr::imap_dfr(
     md,
@@ -121,53 +89,92 @@ prune_cache <- function(ctxt) {
   purrr::walk(datas_out, ~ sure_delete(fs::path_join(c(ctxt$full_cache_rep, .x))))
 }
 
-# pick les meilleures données en cache
-#' @importFrom rlang %||%
-#' @noRd
-pick_gooddata <- function(good_datas, ctxt) {
-  dates <- purrr::map(good_datas, "date") |>
-    unlist() |>
-    lubridate::as_datetime()
-  mdd <- which.max(dates)
-  good_good_data <- good_datas[[mdd]]
-  fnm <- names(good_datas)[[mdd]]
-  fnd <- fs::path_join(c(ctxt$full_cache_rep, good_good_data$data_file))
+read_data <- function(meta, ctxt) {
+  fnd <- fs::path_join(c(ctxt$full_cache_rep, meta$data_file))
+  if(!data_ok(fnd, ctxt$cachebasename))
+    return(NULL)
+  data <- meta |> as.list()
+  data$args <- data$args |> unlist() |> as.list()
+  data$track <- data$track |> unlist() |> as.list()
+  data$qmd_file <- data$qmd_file |> unlist() |> as.list()
+  new_meta <- purrr::map_lgl(
+    rlang::set_names(c("track", "track_hash", "qmd_file", "wd", "src_in")),
+    ~{
+      chged <- !setequal(data[[.x]], ctxt[[.x]])
+      data[[.x]] <<- ctxt[[.x]]
+      chged})
 
-  ggd_lapse <- good_good_data$lapse %||% "never"
-  ggd_wd <- good_good_data$wd %||% "file"
-  ggd_qmds <- setequal(good_good_data$qmd_file ,
-                       ctxt$new_qmds )
-  ggd_track <- setequal(good_good_data$track ,
-                        ctxt$track )
-  ggd_src_in <- ctxt$src_in == good_good_data$src_in %||% "project"
+  data$ok <- "cache"
+  data$error <- NULL
+  data$data_date <- lubridate::as_datetime(meta$data_date, tz = Sys.timezone())
+  data$data <- qs2::qs_read(fnd, nthreads = getOption("sourcoise.nthreads"))
 
-  if(ggd_lapse != ctxt$lapse | ggd_wd != ctxt$wd | !ggd_qmds | !ggd_track | !ggd_src_in) {
-    newmdata <- good_good_data
-    newmdata$file <- NULL
-    newmdata$lapse <- ctxt$lapse
-    newmdata$wd <- ctxt$wd
-    newmdata$qmd_file <- ctxt$new_qmds
-    newmdata$track <- ctxt$track
-    newmdata$args <- ctxt$args
-    newmdata$src_in <- ctxt$src_in
-    newmdata$log_file <- ctxt$log_file
-    newmdata$json_file <- fnm |> fs::path_rel(ctxt$root)
-    jsonlite::write_json(newmdata, path = fnm)
+  if(any(new_meta)) {
+    data$json_file <- write_meta(meta, ctxt)
   }
-
-  good_good_data$ok <- "cache"
-  good_good_data$json_file <- fnm
-  if(getOption("sourcoise.memoize"))
-    good_good_data$data <- read_data_from_cache(fnd)
-  else
-    good_good_data$data <-   qs2::qs_read(fnd, nthreads = getOption("sourcoise.nthreads"))
-
-  return(good_good_data)
+  return(data)
 }
 
-read_data_from_cache <- function(fnd) {
-  qs2::qs_read(fnd, nthreads = getOption("sourcoise.nthreads"))
+write_meta <- function(metas, ctxt) {
+
+  towrite <- list(
+    timing = metas$timing |> as.numeric(),
+    date = metas$date |> as.character(),
+    size = metas$size |> as.numeric(),
+    args = (metas[["args"]] |> unlist() |> as.list()) %||% list(),
+    lapse = metas$lapse,
+    src = metas$src,
+    src_hash = metas$src_hash,
+    arg_hash = metas$arg_hash,
+    track_hash = metas$track_hash,
+    track = (metas[["track"]] |> unlist() |> as.list()) %||% list(),
+    wd = metas$wd,
+    qmd_file = (metas[["qmd_file"]] |> unlist() |> as.list()) %||% list(),
+    src_in = metas$src_in,
+    data_hash = metas$data_hash,
+    priority = metas$priority,
+    file_size = metas$file_size,
+    data_date = metas$data_date,
+    data_file = metas$data_file)
+
+  new_cc <- 1
+  existing <- fast_metadata(root=ctxt$root,
+                            uid = ctxt$uid,
+                            bn = ctxt$cachename,
+                            argid = ctxt$argid,
+                            cache_reps = ctxt$root_cache_rep)
+  if(length(existing$index)>0) {
+    new_cc <- existing$index
+    if(length(new_cc) > 0)
+      new_cc <- max(new_cc, na.rm=TRUE)+1
+  }
+  new_json_fn <- fs::path_join(
+    c(ctxt$root_cache_rep,
+      glue::glue("{ctxt$cachename}-{ctxt$argid}_{ctxt$uid}-{new_cc}"))) |>
+    fs::path_ext_set("json")
+  jsonlite::write_json(towrite, new_json_fn, pretty = TRUE)
+  return(new_json_fn)
 }
+
+# read_metas <- function(ctxt) {
+#   all_metas <- get_all_metadata(ctxt)
+#   if(nrow(all_metas)==0)
+#     return(NULL)
+#   all_metas <- all_metas |>
+#     dplyr::filter(data_date == max(data_date)) |>
+#     dplyr::slice(1) |>
+#     as.list()
+#
+#   data <- all_metas
+#   data$data <- NULL
+#   fnd <- fs::path_join(c(fs::path_dir(all_metas$name), all_metas$data_file))
+#
+#   if(file.exists(fnd)) {
+#     data$data <- qs2::qs_read(fnd, nthreads = getOption("sourcoise.nthreads"))
+#   }
+#
+#   return(data)
+# }
 
 data_returned <- function(data, ctxt) {
   if(!ctxt$metadata)

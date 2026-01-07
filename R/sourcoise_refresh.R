@@ -60,14 +60,13 @@ sourcoise_refresh <- function(
     priotirize = TRUE,
     log = "INFO",
     .progress = TRUE) {
-
   refresh_start <- Sys.time()
 
   root_root <- try_find_root(root, src_in = "project")
   startup_log2("INFO", root_root)
-  ww <- sourcoise_status(short = FALSE, prune = TRUE, root=root, quiet=quiet)
+  ww <- sourcoise_status(short = FALSE, prune = TRUE, root=root, quiet=TRUE)
   n_sources <- nrow(ww)
-  if(!is.null(what)) {
+  if(!is.null(what)>0) {
     if("character"%in%class(what)) {
       ww <- ww |>
         dplyr::filter(purrr::map(what, ~stringr::str_detect(ww$src,.x) ) |> purrr::reduce(`|`))
@@ -81,7 +80,8 @@ sourcoise_refresh <- function(
   if(is.null(what))
     what <- ww
 
-  what <- what |> dplyr::filter(.data$exists)
+  if(nrow(what)>0)
+    what <- what |> dplyr::filter(.data$exists)
 
   if(nrow(what)==0) {
     if(!quiet)
@@ -119,10 +119,14 @@ sourcoise_refresh <- function(
         sourcoise.refreshing.hit = list() ) )
     options(
       sourcoise.refreshing = TRUE,
-      sourcoise.refreshing.2do = what[["src"]],
+      sourcoise.refreshing.2do = what |>
+        dplyr::mutate(fsrc = purrr::map2(root, src, \(.r, .f) fs::path_join(c(.r,.f)))) |>
+        dplyr::pull() |>
+        unlist() |>
+        tolower(),
       sourcoise.refreshing.done = list(),
       sourcoise.refreshing.hit = list())
-      }
+  }
 
   logger::log_info("Refreshing {nrow(what)} source files")
   if(!quiet)
@@ -136,10 +140,7 @@ sourcoise_refresh <- function(
   }
 
   total_time <- ceiling(sum(what$timing, na.rm=TRUE))
-  if(is.null(root))
-    cwd <- getwd() |> path_abs()
-  else
-    cwd <- root
+  cwd <- getwd() |> path_abs()
   if(.progress)
     idpgr <- cli::cli_progress_bar("refreshing", total = total_time)
 
@@ -174,12 +175,13 @@ sourcoise_refresh <- function(
 
       msrc <- fs::path_join(c(root, src)) |> fs::path_rel(cwd)
       if( src_data$ok == "exec" | done ) {
-        if(src_data$data_date > data_date)
+        if(lubridate::as_datetime(src_data$data_date, tz=Sys.timezone()) >
+           lubridate::as_datetime(data_date, tz=Sys.timezone()))
           new <- TRUE else
             new <- FALSE
-          data_size <- glue::glue("{scales::label_bytes()(src_data$size)}")
+          data_size <- glue::glue("{fs::as_fs_bytes(src_data$size)}")
           msg <- glue::glue(
-            "{msrc} executed in {round(src_data$timing)} s. {ifelse(done, 'cached during refresh', '' )}")
+            "{msrc} executed in {round(src_data$timing)} s.{ifelse(done, ' cached during refresh', '' )}")
           if(new)
             cli::cli_alert_success(
               "{msg}, {.strong new data generated} ({data_size})" ) else
@@ -188,7 +190,7 @@ sourcoise_refresh <- function(
       } else {
         cli::cli_alert_danger(
           "{msrc} failed (see log {.file {src_data$log_file}})" )
-        cli::cli_alert(src_data$error|> errorCondition())
+        cli::cli_verbatim(src_data$error %||% "Cascade error")
       }
 
       if(unfreeze)
@@ -215,15 +217,20 @@ sourcoise_refresh <- function(
   dt <- difftime(Sys.time(), refresh_start, units = "secs") |> as.numeric() |> round()
   tsize <- res$size |> unlist() |>  sum(na.rm=TRUE)
   if(!quiet)
-    cli::cli_alert_info("Total refresh in {dt} seconds for {scales::label_bytes()(tsize)} of data")
+    cli::cli_alert_info("Total refresh in {dt} seconds for {fs::as_fs_bytes(tsize)} of data")
 
   if(priotirize & nrow(what)==n_sources) {
-    allsrcs <- res$src |> unlist() |> fs::path_ext_remove()
-    hits <- getOption("sourcoise.refreshing.hit") |> unlist() |> table()
-    nohits <- setdiff(allsrcs, names(hits))
+    allsrcs <- res$src |>
+      unlist() |>
+      tolower()
+    hits <- getOption("sourcoise.refreshing.hit") |>
+      unlist() |>
+      table()
+
+    nohits <- setdiff(allsrcs, names(hits) |> tolower() )
     srcs <- c(hits, rlang::set_names(rep(0, length(nohits)), nohits))
     srcs <- srcs[names(srcs)%in%allsrcs[res$ok=="exec"]]
     purrr::iwalk(srcs, ~sourcoise_priority(.y, 10 + .x))
   }
   invisible(res)
-  }
+}

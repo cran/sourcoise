@@ -4,7 +4,7 @@
 \alias{sourcoise_meta}
 \title{Get Sourcoise Metadata for a Script}
 \usage{
-sourcoise_meta(path, args = NULL)
+sourcoise_meta(path, args = NULL, root = NULL, quiet = FALSE)
 }
 \arguments{
 \item{path}{Path to the script file (character). Can be an absolute or relative path.}
@@ -12,6 +12,10 @@ sourcoise_meta(path, args = NULL)
 \item{args}{Named list of arguments that were passed to the script, if any. Default is \code{NULL}.
 This is used to identify the specific cached version when the script was executed with
 different argument sets.}
+
+\item{root}{(defaut \code{NULL}) the root of the project (you'd better rely on sourcoise for that one)}
+
+\item{quiet}{(defaut \code{FALSE}) should we say something ?}
 }
 \value{
 A named list containing cache metadata with the following elements:

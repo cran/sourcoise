@@ -1,7 +1,7 @@
 Type: Package
 Package: sourcoise
 Title: Source a Script and Cache
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: 
     person("Xavier", "Timbeau", , "xavier.timbeau@sciencespo.fr", role = c("aut", "cre", "cph"))
 Description: Provides a function that behaves nearly as base::source() but
@@ -16,9 +16,9 @@ URL: https://xtimbeau.github.io/sourcoise/,
 BugReports: https://github.com/xtimbeau/sourcoise/issues
 Depends: R (>= 4.2.0)
 Imports: cli, digest, dplyr, fs, glue, jsonlite, knitr, lobstr, logger,
-        lubridate, memoise, purrr, qs2, quarto, RcppSimdJson, rlang,
-        rprojroot, scales, stringr, tibble, tidyr, utils
-Suggests: bench, rmarkdown, testthat (>= 3.0.0)
+        lubridate, memoise, purrr, qs2, RcppSimdJson, rlang, rprojroot,
+        stringr, tibble, tidyr, utils
+Suggests: quarto, bench, rmarkdown, testthat (>= 3.0.0)
 VignetteBuilder: quarto
 Config/testthat/edition: 3
 Encoding: UTF-8
@@ -26,8 +26,8 @@ RoxygenNote: 7.3.3
 SystemRequirements: Quarto command line tools
         (https://github.com/quarto-dev/quarto-cli).
 NeedsCompilation: no
-Packaged: 2025-12-09 19:11:13 UTC; timbe
+Packaged: 2026-01-07 08:30:49 UTC; timbe
 Author: Xavier Timbeau [aut, cre, cph]
 Maintainer: Xavier Timbeau <xavier.timbeau@sciencespo.fr>
 Repository: CRAN
-Date/Publication: 2025-12-09 19:30:02 UTC
+Date/Publication: 2026-01-07 19:50:02 UTC

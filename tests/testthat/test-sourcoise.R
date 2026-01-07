@@ -52,7 +52,7 @@ test_that("prevent works", {
 })
 
 ## timing test
-
+setwd(dir)
 if(rlang::is_installed("bench")&FALSE) {
   gc()
   timing_force <- bench::mark(sourcoise("slow.R", force_exec = TRUE), max_iterations = 5 )
@@ -60,7 +60,7 @@ if(rlang::is_installed("bench")&FALSE) {
   timing <- bench::mark(sourcoise("slow.R"), max_iterations = 5)
 
   test_that("Timings", {
-    expect(timing_force$median>=timing$median,
+    expect(timing_force$median>=5*timing$median,
            "cache is too slow")
   })
 }
@@ -71,38 +71,38 @@ meta <- sourcoise_meta("prix_insee.R")
 test_that("sourcoise_meta", {
   expect(meta$ok == "cache ok&valid",
          "no metadata returned")
-  expect(meta$data_date == stringr::str_remove(data$data_date, " CET$"),
+  expect(meta$data_date == lubridate::as_datetime(data$data_date, tz=Sys.timezone()),
          "date not the same")
   expect(meta$data_file == data$data_file,
          "data_file not the same")
 })
 
 test_that("meta ok when no cache", {
-  expect(sourcoise_meta("toto.R")$ok == "no cache data",
+  expect(sourcoise_meta("toto.R")$ok |> stringr::str_detect("not found"),
          "meta fails when nothing found")
 })
 
 ## track files
 
-# write.csv("data", file = fs::path_join(c(dir, "data.csv")))
-# zz <- sourcoise("prix_insee.R", track = "data.csv", metadata=TRUE)
-#
-# test_that(
-#   "tracking", {
-#     expect(sourcoise("prix_insee.R", track = "data.csv", metadata=TRUE)$ok == "cache", "cache ?")
-#   })
-#
-# write.csv("data modified", file = fs::path_join(c(dir, "data.csv")))
-#
-# test_that(
-#   "tracking", {
-#     expect(sourcoise("prix_insee.R", track = "data.csv", metadata=TRUE)$ok == "exec",  "exec ?")
-#   })
-#
-# test_that(
-#   "tracking", {
-#     expect(sourcoise("prix_insee.R", track = "data.csv", metadata=TRUE)$ok == "cache",  "cache ?")
-#   })
+write.csv("data", file = fs::path_join(c(dir, "data.csv")))
+zz <- sourcoise("prix_insee.R", track = "data.csv", metadata=TRUE)
+
+test_that(
+  "tracking", {
+    expect(sourcoise("prix_insee.R", track = "data.csv", metadata=TRUE)$ok == "cache", "cache ?")
+  })
+
+write.csv("data modified", file = fs::path_join(c(dir, "data.csv")))
+
+test_that(
+  "tracking", {
+    expect(sourcoise("prix_insee.R", track = "data.csv", metadata=TRUE)$ok == "exec",  "exec ?")
+  })
+
+test_that(
+  "tracking", {
+    expect(sourcoise("prix_insee.R", track = "data.csv", metadata=TRUE)$ok == "cache",  "cache ?")
+  })
 
 ## sourcoise_status ----------------
 
@@ -144,3 +144,4 @@ if(!is.null(cache_dir))
     expect(!fs::dir_exists(cache_dir),
            "cache dir was not removed")
   })
+

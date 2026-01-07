@@ -263,26 +263,31 @@ text-decoration: underline; }
 <p><code>sourcoise()</code> peut retourner (en plus des données) les métadonnées, ce qui permet de renseigner par exemple la date de dernier téléchargement dans les notes d’un graphique automatiquement.</p>
 <p>Une dernière chose : <code>sourcoise()</code> est doté d’une heuristique maline trouve le fichier source même si il est caché (i.e. que le chemin est approximatif, ce qui déclenche une erreur normalement, mais là ça passe), ce qui augmente la portabilité des fichiers sources et facilite l’orgnisation d’un projet. Bien sûr, en cas d’ambiguité, <code>sourcoise()</code> prévient (mais choisi).</p>
 <h2 id="performance">Performance</h2>
-<p>L’exécution “vraie” du scirpt <code>r</code> en exemple (<code>prix_insee.r</code>), sur un Macbook Air M2, prend 34ms et alloue 25Mb Lorsque les données sont en cache, l’exécution est effectuée en moins de 5ms et l’allocation de mémoire est celle des données finales (200kb). Le temps d’exécution des données cachées ne dépend que de leur taille alors que le temsp d’exécution “vraie” dépend de la complexité des calculs et des volumes téléchargés par le script. L’acces direct est bien sûr (infiniment) plus rapide, mais sans invalidation de cache !</p>
+<p>L’exécution “vraie” du scirpt <code>r</code> en exemple (<code>prix_insee.r</code>), sur un Macbook Air M2, prend 1s et alloue 1Mb Lorsque les données sont en cache, l’exécution est effectuée en 5ms et l’allocation de mémoire est de 5Mb. Le temps d’exécution des données cachées ne dépend que de leur taille alors que le temps d’exécution “vraie” dépend de la complexité des calculs et des volumes téléchargés par le script (et de la machine employée). L’acces direct est bien sûr (infiniment) plus rapide, mais sans invalidation de cache !</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bench)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(fs)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sourcoise)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">file_copy</span>(</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">path_package</span>(<span class="st">&quot;sourcoise&quot;</span>, <span class="st">&quot;ipch&quot;</span>, <span class="st">&quot;prix_insee.r&quot;</span>),</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;/tmp/prix_insee.r&quot;</span>,</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>, <span class="at">root=</span><span class="st">&quot;/tmp&quot;</span>)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">mark</span>(<span class="at">cache =</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>, <span class="at">root=</span><span class="st">&quot;/tmp&quot;</span>),</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">no_cache =</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>, <span class="at">root  =</span> <span class="st">&quot;/tmp&quot;</span>, <span class="at">force_exec =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">direct =</span> data)</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 6</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   expression      min   median    `itr/sec` mem_alloc `gc/sec`</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;        &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 cache        5.61ms   5.75ms        171.    171.5KB     9.92</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 no_cache    31.62ms  35.45ms         28.0    25.6MB    11.2 </span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 direct            0      1ns 1370228815.         0B     0</span></span></code></pre></div>
-<p><sup>Created on 2025-03-10 with <a href="https://reprex.tidyverse.org">reprex v2.1.1</a></sup></p>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>tmp <span class="ot">&lt;-</span> <span class="fu">tempdir</span>()</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set_sourcoise_root</span>(tmp)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; /var/folders/sr/zcvrvtss0w75m9m9g2t0zrcr0000gn/T/Rtmp3w3fkq</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">setwd</span>(tmp)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">file_copy</span>(</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">path_package</span>(<span class="st">&quot;sourcoise&quot;</span>, <span class="st">&quot;ipch&quot;</span>, <span class="st">&quot;prix_insee.r&quot;</span>),</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;prix_insee.r&quot;</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">mark</span>(<span class="at">cache =</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>,),</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>     <span class="at">no_cache =</span> <span class="fu">sourcoise</span>(<span class="st">&quot;prix_insee.r&quot;</span>, <span class="at">force_exec =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>     <span class="at">direct =</span> data)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Warning: Some expressions had a GC in every iteration; so filtering is</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; disabled.</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 6</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 cache         4.6ms   5.05ms   1.81e+2       1MB   27.8  </span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 no_cache      1.03s    1.03s   9.72e-1    5.58MB    0.972</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 direct            0      1ns   1.17e+9        0B    0</span></span></code></pre></div>
+<p><sup>Created on 2025-12-30 with <a href="https://reprex.tidyverse.org">reprex v2.1.1</a></sup></p>
 <h2 id="le-workflow-avec-sourcoise">Le <em>workflow</em> avec sourcoise</h2>
 <p>Le cas central d’utilisation de sourcoise est dans un projet <code>quarto</code>. On acquiert des données de diférentes sources, plus ou moins complexes, nécessitant plus ou moins de traitements.</p>
 <p>Ces données peuvent être mises à jour, mais la fréquence de mise à jour est bien plus basse que la fréquence de rendu du projet quarto.</p>
